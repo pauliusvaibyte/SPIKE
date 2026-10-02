@@ -1,0 +1,2706 @@
+# Phase -1 Frozen Research Universe — QuantLab OS spike
+# Declared 2026-09-23 BEFORE any evaluation run (acceptance criterion 1).
+# Source of candidates: companion-bot research/bias_audit_2026-09-04.md
+# (88-entry experiment ledger; signal-family trials enumerated below).
+#
+# Snapshot: data_snapshot/ @ 2026-09-23T02:20:28Z, hashes in
+# data_snapshot/SNAPSHOT_MANIFEST.json. All evaluation uses ONLY this snapshot.
+
+meta:
+  frozen_at: "2026-09-23"
+  ledger_source: "bias_audit_2026-09-04.md (88 entries, 9 signal families + retests)"
+  convention:
+    fee_per_side_bp: 5          # registered challenger convention; stress at 10bp
+    deadband_miss_bp: 1         # par.61 convention: |fwd| < 1bp counts as miss
+    wilson_gate: "pooled N>=30 AND Wilson lower > 0.50"   # C179 descriptive gate
+    sharpe_annualization: "sqrt(periods_per_year) on the candidate's native bar freq"
+
+# ── Trial accounting (family-scoped, from the audit ledger) ──────────────
+# Signal-family evaluations ever run on this market (for DSR deflation):
+#   OFI x2, FRA, MRV, FDM, TREND-1, FLUSH-1, BASIS-1, TREND-2, FRA-momentum
+#   + R1/R2/R3/R4 isolation re-runs + E1/D2/D3 diagnostics (not new families).
+# Declared effective independent families for deflation: 9
+trial_accounting:
+  # A29b: these fields lagged the narrative — corrected to current
+  # truth. Streams counted = distinct candidate ids across all round
+  # report tables (incl. per-round retests billed to family).
+  total_signal_evaluations: 85   # distinct candidate ids in reports
+                                 # (81 table rows incl. 3 extended retests;
+                                 # R14 +4 declared autopsy derivatives;
+                                 # R15 +5 live-unused-columns batch)
+  effective_families: 53         # ...->+4R12->+1R14 (RISK-OFF composite)
+                                 # ->+2R15 (MINING-ECON hashrate,
+                                 # RATES-SHOCK us10y; dormancy/pl_ratio/
+                                 # sth_mvrv billed to sibling families)
+  retests_billed_to_family: ["R1", "R2", "R3", "R4", "OFI-1h", "OFI-8h"]
+
+# ── Frozen candidate list ─────────────────────────────────────────────────
+candidates:
+
+  # ── Powered candidates ──
+  - id: tsmom_daily_14d
+    family: TREND-2
+    status: real
+    spec: "daily close; signal=sign(trailing 14d close-to-close ret); event iff |ret14d|>=1.0%; predict sign of 7d fwd close-to-close; events spaced >=7d"
+    data: ["data_cache/btc_1d_365d.json", "data_cache/sol_1d_365d.json"]
+    horizon_days: 7
+    prior_result: "FAIL N=47 hit 0.4894 Wilson[0.35,0.63] (Mar-Sep window)"
+    note: "365d cache extends original 186-bar window — acts as extension/OOS."
+
+  - id: fra_momentum_p90_long
+    family: FRA-CHALLENGER
+    status: real
+    spec: "BTC only; funding percentile>=90 on trailing funding-cache window; LONG; exits 4% SL / +8% TP-then-3%-trail / 24h time-stop; evaluated on 1h candle closes (divergence from 5-min live mids documented)"
+    data: ["data_cache/funding/btc_funding_90d.json", "data_cache/btc_1h_90d.json", "data_cache/btc_1h_180d.json"]
+    prior_result: "shadow n=3 +541bp net (in flight); study +75.8bp/24h on 174d"
+    note: "journal rolling-3000 basis impossible in backtest (journal=16.5d); trailing-window percentile on funding cache is the study's measured basis."
+
+  - id: fra_fade_p90_short
+    family: FRA
+    status: real_known_failure
+    spec: "BTC+SOL; funding pctile>=90 -> SHORT; identical exit structure to challenger (symmetric control)"
+    data: ["data_cache/funding/btc_funding_90d.json", "data_cache/funding/sol_funding_90d.json", "data_cache/btc_1h_90d.json", "data_cache/sol_1h_90d.json"]
+    prior_result: "FRA-only parity PF 0.38; 6 condemned-band shorts Sep 15-17"
+
+  - id: trend1_donchian_4h
+    family: TREND-1
+    status: real_known_failure
+    spec: "4h bars; first crossing of prior-24-bar Donchian channel (current bar excluded); predict fwd-4h sign; deadband applies"
+    data: ["data_cache/btc_4h_180d.json", "data_cache/sol_4h_180d.json"]
+    prior_result: "FAIL N=133 hit 0.4436 Wilson[0.36,0.53]"
+
+  - id: flush1_reversal_15m
+    family: FLUSH-1
+    status: real_known_failure
+    spec: "15m bars; wick/range>=0.60 AND vol>=2x median-prior-20 -> predict reversal over fwd-4h; events within 4 bars suppressed"
+    data: [".cache_btc_candles.json", ".cache_sol_candles.json"]
+    prior_result: "FAIL N=509 hit 0.5147 Wilson[0.47,0.56]"
+
+  - id: basis1_premium_p10
+    family: BASIS-1
+    status: real_known_failure
+    spec: "hourly funding rows; premium<=trailing-720-row p10 -> predict UP fwd-8h; anchors every 8th row (non-overlap)"
+    data: ["data_cache/funding/btc_funding_90d.json", "data_cache/funding/sol_funding_90d.json"]
+    prior_result: "FAIL N=37 hit 0.5135 Wilson[0.36,0.67] (armed window)"
+
+  - id: mrv_rsi_reversion_1h
+    family: MRV
+    status: real_known_failure_approximate
+    spec: "APPROXIMATE clean-room: RSI-14(1h)<30 -> long, >70 -> short, fwd-4h sign; production MRV pipeline (RSI+ATR+VPA+MTF confluence) not fully reimplementable — flagged approximate, evidence downgraded"
+    data: ["data_cache/btc_1h_180d.json", "data_cache/sol_1h_180d.json"]
+    prior_result: "MRV-only parity N=64 PF 0.51"
+
+  - id: ofi_imbalance_l2
+    family: OFI
+    status: real_underpowered_by_construction
+    spec: "L2 journal imbalance -> fwd-8h sign; journal span ~2wk => power gate must emit UNDERPOWERED before evaluation"
+    data: ["l2_journal/"]
+    prior_result: "falsified at 1h and 8h on N=18-35 probes"
+
+  - id: fra_momentum_p90_long_r3000
+    family: FRA
+    status: real
+    spec: "production rolling-3000-window variant of fra_momentum_p90_long; emitted by run_extended_eval.py (events_extended/)"
+    data: ["data_extended/funding/"]
+
+  # ── Validator fixtures (calibration — must behave as labeled) ──
+  - id: null_random_entries
+    family: FIXTURE-NULL
+    status: fixture_must_die
+    spec: "uniform-random BTC entries, challenger exit structure; expected: no edge"
+  - id: null_shifted_tsmom
+    family: FIXTURE-NULL
+    status: fixture_must_die
+    spec: "tsmom_daily_14d signal shifted +14d (decorrelated); expected: no edge"
+  - id: leak_tsmom_nextclose
+    family: FIXTURE-LEAK
+    status: fixture_must_be_caught
+    spec: "tsmom_daily_14d but signal uses close[t+1] in the 14d lookback (lookahead); prefix-invariance + implausible-Sharpe must catch it"
+  - id: planted_weak_edge
+    family: FIXTURE-PLANTED
+    status: fixture_must_survive
+    spec: "BTC daily; signal = true next-7d sign with p=0.58 else random (seeded); expected: survives directional tests at declared power or flagged WATCH"
+
+# ── Execution plan (order fixed) ──────────────────────────────────────────
+execution:
+  step1_power_gate: "MinTRL/effective-n per candidate; UNDERPOWERED recorded without compute"
+  step2_validator_calibration: "run fixtures only; harness must kill nulls, catch leak, retain planted edge"
+  step3_evaluation: "walk-forward + purged K-fold + CPCV -> PBO/PSR/DSR -> placebos -> prefix-invariance -> verdict"
+  verdicts: [RESEARCH_SUPPORTED, WATCH, UNDERPOWERED, KILL, MODEL_RISK, BLOCKED]
+  decision_tree: |
+    survivor -> Phase 0 justified
+    all UNDERPOWERED -> invest in data, not architecture
+    all well-powered KILL -> invest in hypotheses, not architecture
+
+# ── Errata (recorded post-run, 2026-09-23; declared spec left unchanged) ─
+errata:
+  - id: E1
+    item: "fra_* spec text said 'evaluated on 1h candle closes'; implementation
+           evaluates on 15m bars (horizon_bars=96 = 24h). Reason: 1h cache ends
+           2026-05-21 and has zero overlap with the funding window (Jun 14-Sep 12).
+           15m is finer and closer to the live 5-min mid evaluation — deviation
+           improves fidelity, recorded here for honesty."
+  - id: E2
+    item: "power_gate gained a temporal-span criterion (>=30d) post-implementation:
+           event count alone overstates effective n for clustered/autocorrelated
+           signals. This implements the manifest's own declared expectation that
+           ofi_imbalance_l2 emits UNDERPOWERED (its journal spans ~19d)."
+  - id: E3
+    item: "data eras are disjoint: 1d/1h/4h caches span ~Jun2025-May2026 while
+           15m/funding/L2 cover Mar-Sep2026. Powered KILL verdicts on the old-era
+           candidates therefore bound a different regime set than the recent
+           Aug-Sep rally. Neither era validates the other."
+  - id: E4
+    item: "planted_weak_edge (p=0.58) produces Sharpe ~5 which trips the
+           implausibility flag — cosmetic; the fixture still passes survival
+           criteria. A deliberately strong edge was chosen to prove the harness
+           retains real signal; the flag confirms that gate also works."
+  - id: E5
+    item: "Round-2 (extended-data) evaluation uses 4h bars for exit paths
+           (horizon_bars=6 covers 24h): the 5000-bar API lookback cap makes
+           4h the deepest evaluable granularity (833d). Intrabar SL/TP
+           resolution is coarser than live 5-min mids — conservative bias."
+  - id: E6
+    item: "xvenue_funding_disloc: HL funding stamps carry ~50-140ms write
+           latency, so the declared (T-8h,T] window excludes the HL settle
+           stamped T+eps — the HL 8h sum misses the final hour of the
+           Binance epoch period. ~1h phase asymmetry; direction/threshold
+           unchanged. Also: HL funding cadence was 8h for launch week only
+           (25 rows); hourly since 2023-06-08."
+
+  - id: E7
+    date: 2026-09-23
+    severity: informational
+    scope: harmony_macro_daily / round4 candidates
+    issue: >
+      harmony btc_price uses a DAY-OPEN convention (blockchain.info
+      market-price is stamped at 00:00 UTC = open of day D = close of D-1;
+      verified vs HL candles at 12bp residual vs 240bp vs same-day close).
+      Round-4 returns are therefore open-to-open, not close-to-close.
+      No causality break: all predictors shifted >=1d so signals are known
+      before entry open[t]; convention dampens variance slightly vs
+      close-to-close. cal_weekend_drift independently cross-validated on
+      HL close data (hit 0.595) before this was characterized.
+    status: documented; no verdict impact
+# ── Post-run state (recorded 2026-09-23 after Phase -1 execution) ────────
+post_run_state:
+
+  # Powered failures are permanently invalidated. Mutating parameters of a
+  # dead family (0.90->0.87, lookback 20->23, SMA 45->48) is the exact
+  # overfitting behavior this framework exists to prevent. A new entry in
+  # the same economic family requires a genuinely different mechanism,
+  # declared as a NEW family in trial_accounting.
+  invalidation_corpus:
+    - tsmom_daily_14d      # TREND-2: n=97, net -4194bp, DSR 0.027, placebo p=0.73
+    - trend1_donchian_4h   # TREND-1: n=136, net -4531bp, anti-predictive
+    - flush1_reversal_15m  # FLUSH-1: n=572, hit 0.503 coin-flip, net -4681bp
+    - basis1_premium_p10   # BASIS-1: n=44, net -1114bp
+    - mrv_rsi_reversion_1h # MRV-approx: hit 0.554 real direction, net -6125bp
+                           # (statistically alive, economically dead @1h/fee)
+
+  # Underpowered candidates are NOT killed and NOT mutated. Spec frozen.
+  # Journals become a prospective experiment: collect until the declared
+  # requirement, then re-run the identical spec through the identical harness.
+  collect_only:
+    - id: fra_momentum_p90_long
+      required_evidence: ">=30 independent entries (24h-cooldown separated)"
+      observed: "n=3 on 90d funding window; +4 live shadow entries post-cutoff"
+      next_eligible_test: "when funding history OR shadow journal reaches n>=30 entries"
+      current_action: COLLECT_ONLY
+    - id: fra_fade_p90_short
+      required_evidence: ">=30 pooled BTC+SOL entries"
+      observed: "n=9 on 90d funding window"
+      next_eligible_test: "same trigger as fra_momentum"
+      current_action: COLLECT_ONLY
+    - id: ofi_imbalance_l2
+      required_evidence: "l2_journal span >=30d minimum (60-90d preferred)"
+      observed: "span=19d, n=84 clustered rows"
+      next_eligible_test: "~2026-10-03 (span crosses 30d); re-run on new snapshot"
+      current_action: COLLECT_ONLY
+
+# ── Round 2: extended-data re-test (declared collect_only trigger, early) ─
+round2_extended_eval:
+  data: "data_extended/ — funding to launch (28,894 rows x2), 4h bars 833d"
+  result: "fra_momentum KILL on both percentile bases (n=136 hit .478 / n=121
+           hit .488); fra_fade KILL (n=297, -8155bp); basis1 WATCH (n=604,
+           hit .551, Wilson lo .511, net +3572bp, placebo p=.032, DSR .297 —
+           real directional signal but below the family-deflated bar)"
+  report: reports/report_extended.md
+  note: "Round-2 KILL on fra_momentum resolves the collect_only entry — the
+         90d/shadow readings were regime luck. basis1 upgraded to WATCH:
+         worth one targeted follow-up (sub-period robustness, mechanism
+         check), NOT promotion. invalidation_corpus now includes fra families.
+         [resolved 2026-09-29 by round16_basis1_audit: basis1 KILL — top-5
+         events 139% of net, no dose-response; BASIS-1 family closed, no
+         WATCH survivors remain]"
+
+# ── Round 3: new-mechanism families (declared 2026-09-23 BEFORE execution) ──
+# These are genuinely different economic mechanisms, not mutations of killed
+# families. Each spec is frozen here before the runner executes.
+round3_candidates:
+  data: "data_extended/ (HL funding to launch; HL 1h/4h bars; Binance
+         funding+1h klines since 2019/2y)"
+  trial_accounting: "n_families effective 9 -> 13 (4 new families added)"
+  candidates:
+    - id: settle1_funding_drift
+      mechanism: "funding-settlement cash flow: when payment magnitude is
+                  large, payers' reduction flow pressures price opposite to
+                  the funding sign during the settlement hour"
+      spec: "fire when |rate| >= rolling-median(|rate|, win=2160h);
+             dir = -sign(rate); entry = close of bar ending at settle ts;
+             eval = next 1h close-to-close on HL 1h bars"
+      falsification: "pooled directional hit ~0.50 or net <= 0 after 10bp"
+    - id: xvenue_funding_disloc
+      mechanism: "HL vs Binance funding spread convergence: when HL 8h-
+                  equivalent funding deviates from Binance's 8h rate, HL's
+                  crowded positioning converges -> HL underperforms when
+                  spread > 0"
+      spec: "per Binance epoch T: hl8h = sum HL hourly rates in (T-8h,T];
+             spread = hl8h - bn_rate; fire |spread| >= rolling p90 of
+             |spread| (win=540 epochs ~180d); dir = -sign(spread);
+             eval +8h (2 bars) on HL 4h bars"
+      falsification: "same gates; hit ~0.50 or net <= 0"
+    - id: xvenue_leadlag_1h
+      mechanism: "price discovery originates on the deeper venue: a large
+                  Binance 1h move leads HL's next 1h return"
+      spec: "aligned 1h grid (inner join on t); bn_ret = c[i]/c[i-1]-1;
+             fire |bn_ret| >= rolling p90 (win=2160); dir = sign(bn_ret);
+             eval HL close[i] -> close[i+1]"
+      falsification: "same gates; hit ~0.50 or net <= 0"
+    - id: xvenue_basis_converge
+      mechanism: "HL-Binance price basis dislocations mean-revert: flow
+                  dislocation on the smaller venue is transient"
+      spec: "aligned 1h grid; basis_bp = (hl_c/bn_c - 1)*1e4; fire
+             |basis| >= rolling p99 of |basis| (win=2160);
+             dir = -sign(basis); eval +4h (4 bars)"
+      falsification: "same gates; expected thin margin vs 10bp RT cost"
+  results:
+    settle1_funding_drift: "KILL — n=5311, hit .488, net -54789bp, placebo
+      p=.997 (worse than random). Settlement-hour drift goes WITH funding
+      sign, not against — but inversion is weak (inv hit .512, lo ~.498)."
+    xvenue_funding_disloc: "WATCH — n=363 evaluable (202 uncovered, correctly
+      NaN'd after coverage fix), hit .540, Wilson lo .489 (gate FAIL by
+      .011), net +1810bp, placebo p=.389 — positive net indistinguishable
+      from market drift; weakest of the two WATCHes. First-pass run had a
+      coverage bug (pre-4h-coverage epochs silently evaluated on the first
+      bars of the series, hit .377 KILL) — corrected before this record."
+    xvenue_leadlag_1h: "KILL — n=739, hit .448, net -8609bp. Binance moves
+      do not lead HL same-direction at 1h."
+    xvenue_basis_converge: "KILL — n=198, hit .394, net -4517bp. Dislocations
+      continue rather than revert at this threshold/horizon."
+  report: reports/report_round3.md
+
+# ── Round 4: daily-frequency macro/on-chain families (declared 2026-09-23
+#    BEFORE execution). New information domain: harmony warehouse export
+#    (data_extended/harmony/macro_daily.parquet). Daily bars = lower power
+#    by construction; horizons chosen to keep events independent.
+round4_candidates:
+  data: "harmony daily matrix 2010-2026: blockchain_api BTC price,
+         coinmetrics MVRV, alternative.me fear/greed, Farside ETF flows,
+         Binance daily OI, coc aggregate funding, FRED us10y/vix/nasdaq"
+  trial_accounting: "n_families effective 13 -> 17 (4 new families)"
+  candidates:
+    - id: onchain_mvrv_regime
+      mechanism: "cycle-position valuation: MVRV at rolling-730d extremes
+                  marks overheated (>=p90) or capitulation (<=p10) states
+                  that mean-revert over the following month"
+      spec: "mvrv rolling-730d rank pct (min 365 obs); >=0.90 SHORT /
+             <=0.10 LONG; entry at daily close; eval 30d fwd close-close;
+             30d cooldown between events"
+      falsification: "hit ~0.50 or net <= 0 after 10bp"
+    - id: fng_extreme_sentiment
+      mechanism: "crowd sentiment extremes are contrarian: extreme fear
+                  (<=10) marks local bottoms, extreme greed (>=90) tops"
+      spec: "fng <=10 LONG / >=90 SHORT; eval 7d fwd; 7d cooldown"
+      falsification: "same gates"
+    - id: etf_flow_5d
+      mechanism: "institutional demand pressure: large 5d net ETF inflows
+                  push price over the following week (flow momentum); large
+                  outflows symmetric"
+      spec: "5d rolling sum of total ETF flows >= rolling-252d p90 LONG /
+             <=p10 SHORT; eval 5d fwd; 5d cooldown; 2024-01-11+ only"
+      falsification: "same gates; expected UNDERPOWERED-prone (~690 obs)"
+    - id: cal_weekend_drift
+      mechanism: "weekend liquidity withdrawal: institutional absence
+                  creates systematic Fri->Mon drift"
+      spec: "every Friday entry (non-overlapping); LONG; eval = price
+             Mon-close / Fri-close - 1"
+      falsification: "same gates"
+  results:
+    onchain_mvrv_regime: "KILL — n=91, hit .374, net -130,868bp. Contrarian
+      extremes anti-predictive at 30d: momentum continues through extremes
+      (inversion observed, future-declaration only)."
+    fng_extreme_sentiment: "WATCH — n=40, hit .525, net +6651bp, Sharpe .80,
+      placebo .215. Weak power; sentiment contrarian unconfirmed."
+    etf_flow_5d: "MODEL_RISK — n=56, Sharpe 1.03 but placebo p=.338:
+      contradictory stats (tiny 2024+ sample + drift regime)."
+    cal_weekend_drift: "RESEARCH_SUPPORTED — first statistical survivor:
+      n=839, hit .536, Wilson lo .503, Sharpe 1.33, DSR .982, placebo
+      p<.001, leak-clean. AUDIT CAVEAT: era-split shows the edge is
+      dominated by early-era drift (2010-14 +224bp/wknd); 2022-23 era
+      NEGATIVE (-13bp); 2024-26 +10bp ~= the 10bp fee line. Cross-validated
+      on independent HL daily candles (hit .595). Statistically real
+      calendar structure, economically marginal in the current regime —
+      does NOT clear the 'economically realistic costs' bar for unlock."
+  report: reports/report_round4.md
+
+# ── Round 5: OI-divergence (declared 2026-09-23 BEFORE execution) ────────
+round5_candidates:
+  data: "harmony daily: bgeo_archive_oi_binance (Binance daily OI,
+         2020-08 -> 2026-09) + blockchain_api BTC price"
+  trial_accounting: "n_families effective 17 -> 18"
+  candidates:
+    - id: oi_price_divergence
+      mechanism: "positioning squeeze: OI surging while price falls = new
+                  shorts piling in -> squeeze fuel -> bounce; OI collapsing
+                  while price rises = long-side deleveraging into strength"
+      spec: "oi_chg5 = 5d pct change of Binance OI; ret5 = 5d price return;
+             fire LONG when oi_chg5 >= rolling-252d p90 AND ret5 < 0;
+             fire SHORT when oi_chg5 <= p10 AND ret5 > 0; eval 5d fwd
+             close-close; 5d cooldown"
+      falsification: "hit ~0.50 or net <= 0 after 10bp"
+  harmony_mining_notes: "Harmony v3 falsification shows on-chain overlay
+    adds only +0.05 Sharpe over pure TrendBand; their forward rig logged 0
+    timing-valid observations (captures after execution cutoff — flagged
+    upstream). v4 crowding-trend accruing (10 rows)."
+  results:
+    oi_price_divergence: "UNDERPOWERED — n=14 (joint OI-extreme + adverse
+      price condition is rare at daily frequency). Needs longer OI history
+      or intraday OI data (S3 archive) to resolve."
+  automation: "tools/morning_research.py registered as Windows scheduled
+    task 'QuantLab-MorningResearch' at 07:00 daily: incremental data
+    refresh, coverage-span sentinel, event-contract sweep, all round
+    re-runs (ext/3/4/6/7/8/9/10/11/12 + forward eval), dated note in
+    reports/morning/. Task registered but first scheduled run pending
+    (verified Ready 2026-09-23; subprocess env forced PYTHONIOENCODING=
+    utf-8 to survive cp1252)."
+
+# ── basis1 WATCH follow-up (declared one-shot robustness check, executed
+#    2026-09-23). Verdict revision: regime artifact, not a mechanism.
+basis1_followup:
+  question: "is +3572bp carry-mechanics or regime luck?"
+  findings:
+    era_split: "2024: -141bp | 2025: +3705bp (entire net) | 2026: +8bp"
+    asset_split: "BTC +1909bp, SOL +1663bp (both 2025-driven)"
+    carry_check: "est funding carry 0.15bp/event vs 15.9bp avg gross;
+                  corr(rate,ret)=-0.011 — NOT a carry trade"
+  verdict: "KILL — edge concentrated in a single era; no mechanism survives
+            decomposition. Moved to invalidation_corpus."
+
+# ── fng_extreme WATCH follow-up (same declared one-shot decomposition) ───
+fng_followup:
+  findings:
+    direction_asymmetry: "fear-long n=26 hit .615 +14,373bp vs
+      greed-short n=14 hit .357 -7,721bp — only the fear side works;
+      greed continues (consistent with mvrv/oi momentum-through-extremes)"
+    era: "episodic (2018/2021 drive it); no stable regime"
+  verdict: "remains weak WATCH; asymmetric fear-long variant recorded as a
+    LEAD — requires fresh data or declared holdout (in-sample peeking
+    would invalidate). Not declared as a candidate."
+
+# ── Recorded leads (post-hoc observations; NOT scored; eligible for
+#     declaration only on data unseen at observation time) ────────────────
+leads:
+  - "fng fear-only long (n=26 hit .615 observed in-sample)"
+  - "xvenue disloc/basis continuation direction (hit .62/.61 in-sample)"
+  - "momentum-through-extremes: mvrv/sopr extremes as CONTINUATION signal
+     (anti-predictive as contrarian in rounds 4/5)"
+  # round-6 inverses (in-sample anti-predictive => forward-declare only):
+  - "hl_premium continuation: +sign(premium) at extremes (~.558 gross
+     implied, n=6403) — adverse-entry risk must be modeled"
+  - "funding streak reversion: fade >=24h same-sign runs (~.587 gross
+     implied, n=963)"
+  - "alt reversal after large BTC 1h moves (~.554 gross implied, n=2100)"
+  # round-8:
+  - "alt residual CONTINUATION: idiosyncratic alt moves persist +1d
+     (~.539 gross implied, n=464, bb_p=.006) — inverse of resid-reversal"
+  - "funding_flip is MODEL_RISK pending declared decomposition (flip
+     direction split + momentum-residualized variant)"
+
+# ── Harness upgrade 2026-09-23 ────────────────────────────────────────────
+harness_v2:
+  era_breakdown: "added to falsify.py + all extended runners — calendar-era
+    hit/net now a standard diagnostic layer after it caught basis1's
+    single-era edge and fng's direction asymmetry. Diagnostic only, does
+    not gate."
+
+# ── Forward-declared leads (2026-09-23) ──────────────────────────────────
+# Hypotheses derived from in-sample splits are ineligible for scoring on the
+# data that suggested them. These are declared NOW, frozen at a discovery
+# cutoff; only events with t >= cutoff enter the evaluation set. The morning
+# job accrues them daily. UNDERPOWERED until n>=30 post-cutoff events.
+forward_declared:
+  cutoff_utc: "2026-09-23T00:00:00Z"
+  evaluation: "events t >= cutoff only; pre-cutoff events exist for
+    calibration context but never enter verdict stats"
+  errata_fwd_universe: "2026-09-23: fwd_xvenue_disloc_cont asset pool widened
+    BTC+SOL -> 7 assets when round-6 universe landed. No post-cutoff events
+    had accrued at the time (n=0), so no scored observation influenced the
+    change. Recorded for completeness."
+  hypotheses:
+    - id: fwd_fng_fear_long
+      spec: "fng <= 10 -> LONG 7d (fear-only side of fng_extreme_sentiment,
+        which showed +14373bp/hit .615 on n=26 in-sample)"
+      origin: "round4 directional split 2026-09-23"
+    - id: fwd_xvenue_disloc_cont
+      spec: "|hl8h_sum - bn_epoch| >= rolling-p90 -> dir = +sign(spread)
+        (continuation; the KILL'd fade direction implies its inverse)"
+      origin: "round3 disloc anti-predictive (hit .377 -> cont .623 implied)"
+    - id: fwd_momentum_extremes
+      spec: "mvrv 730d-pct >= .90 -> LONG / <= .10 -> SHORT, 30d (momentum
+        continuation at extremes; inverse of killed contrarian)"
+      origin: "round4 mvrv_regime KILL implies continuation direction"
+  # round-6 inverse leads — observed in-sample, declared 2026-09-23 with
+  # their own cutoff (09:00Z, first boundary after the observation window)
+  r6_leads:
+    cutoff_utc: "2026-09-23T09:00:00Z"
+    hypotheses:
+      - id: fwd_premium_cont
+        spec: "|premium| >= rolling p90 -> dir=+sign(premium), +8h —
+          continuation inverse of killed hl_premium_disloc (~.558 gross
+          implied in-sample, n=6403); pooled 7 assets"
+        origin: "round6 hl_premium_disloc anti-predictive"
+      - id: fwd_funding_streak_fade
+        spec: "fade >=24h same-sign funding streaks at streak end, +24h —
+          inverse of killed funding_run_persistence (~.587 gross implied,
+          n=963); pooled 7 assets"
+        origin: "round6 funding_run_persistence anti-predictive"
+      - id: fwd_alt_reversal
+        spec: "alt next-1h OPPOSITE a >=p90 BTC 1h move — inverse of killed
+          xasset_btc_leads_alts (~.554 gross implied, n=2100); pooled alts"
+        origin: "round6 xasset_btc_leads_alts anti-predictive"
+  # round-8 decomposition leads — observed via the funding_flip follow-up
+  # on data through ~10:00 UTC; own cutoff at the next clean boundary.
+  r8_leads:
+    cutoff_utc: "2026-09-23T12:00:00Z"
+    hypotheses:
+      - id: fwd_mom24h_cont
+        spec: "every non-overlapping 24h block (6x4h): dir=sign(24h ret),
+          eval next 24h — pure short-horizon momentum continuation isolated
+          by the flip decomposition (aligned n=5165 hit .614; counter
+          n=4878 hit .426 => funding flip contributed nothing)"
+        origin: "round8 funding_flip follow-up decomposition"
+      - id: fwd_alt_resid_cont
+        spec: "alt daily residual (vs beta*btc) >=p90 -> CONTINUE +1d —
+          inverse of killed alt_resid_reversal_1d (~.539 gross implied,
+          n=464, bb_p=.006); pooled 6 alts"
+        origin: "round8 alt_resid_reversal anti-predictive"
+  # round-10 flagship forward shadow — the composite replicated
+  # retrospectively; only forward accrual can confirm modern-era edge.
+  r11_leads:
+    cutoff_utc: "2026-09-24T00:00:00Z"
+    hypotheses:
+      - id: fwd_nrpl_cont
+        spec: "nrpl_usd >= rolling-365d-prior p90 -> LONG +3d (inverse of
+          killed nrpl_spike_top_3d: hit .401, net -77431bp, bb_p<.001,
+          era-consistent anti-predictive on 2012-2026)"
+        origin: "round11 nrpl_spike_top_3d anti-predictive"
+      - id: fwd_premium_basis_converge
+        spec: "|premiumIndex daily close| >= rolling-365d-prior p90 ->
+          dir=-sign(premium), +1d, pooled 7 Binance perps. SAME direction
+          as WATCH (in-sample positive; forward accrual is the arbiter).
+          Drift-audit: symmetric skill +26.7bp/ev (L +26.6 / S +26.9)"
+        origin: "round11 premium_basis_converge_1d — only powered WATCH
+          with two-sided non-beta skill"
+      - id: fwd_skew_reversal
+        spec: "skew25_1m <= p10 -> LONG +3d; >= p90 -> SHORT +3d. SAME
+          direction as WATCH. Drift-audit: +50.9bp/ev, L +45 / S +59,
+          n=114 — thin, needs post-cutoff proof"
+        origin: "round11 skew_extreme_reversal_3d"
+      - id: fwd_puell_extreme_cont
+        spec: "INVERSE: puell >= p90 -> LONG +7d; <= p10 -> SHORT +7d.
+          Declared side lost -69804bp symmetric (t=-3.15) — miner
+          extremes continue"
+        origin: "round12 puell_extreme_7d anti-predictive"
+      - id: fwd_reserve_risk_cont
+        spec: "INVERSE: reserve_risk <= p10 -> SHORT +7d; >= p90 ->
+          LONG +7d. Declared side lost -72131bp symmetric (t=-3.63) —
+          valuation regimes trend"
+        origin: "round12 reserve_risk_regime_7d anti-predictive"
+  r10_lead:
+    cutoff_utc: "2026-09-24T00:00:00Z"
+    hypotheses:
+      - id: fwd_flagship_hlbtc
+        spec: "s45125 base + V brake (mvrv>2.5 -> x0.75) on HL BTC daily,
+          t+1, 5bp/unit turnover. N-leg excluded AT DECLARATION (CM flow
+          CSV was a static 2026-09-06 snapshot); coinmetrics refresh was
+          subsequently wired daily — the declared base+V spec stays
+          frozen (mid-accrual spec change would invalidate the track);
+          an N-inclusive parallel lead is eligible for future declaration"
+        origin: "round10 flagship port — retrospective RESEARCH_SUPPORTED"
+  r14_leads:
+    cutoff_utc: "2026-09-29T00:00:00Z"
+    declared_on: "data through 2026-09-26; declaration 2026-09-28"
+    rationale: "Round-14 WATCH autopsy — the shorts carry drift-adjusted
+      skill (t 3.0) but only ~52% episode wins: magnitude payoffs the
+      hit-rate gate cannot bless in-sample. Forward accrual is the only
+      remaining path to adequate power; declared pre-observation of any
+      post-cutoff event."
+    hypotheses:
+      - id: fwd_oi_divergence_short
+        spec: "oi_binance 20d-z decile vs ret_20d decile diverge >= 7
+          with oi rising / px falling -> SHORT +5d. Short leg only.
+          In-sample: n_ep=40, skill +243bp/ep t=0.97 (thin)."
+        origin: "round14 oi_price_divergence_short"
+      - id: fwd_equity_lead_short
+        spec: "fred_nasdaq 5d z <= -2 with BTC flat -> SHORT +5d.
+          Short leg only. In-sample: n_ep=121, skill +240bp/ep t=3.04,
+          ep-wilson 0.432 (magnitude edge, hit gate fail)."
+        origin: "round14 equity_lead_btc_5d_short"
+      - id: fwd_riskoff_cluster
+        spec: "union of the two short triggers above -> SHORT +5d.
+          Tests whether clustering adds power; in-sample diluted
+          (net 8238 < 10960) — the forward stream arbitrates."
+        origin: "round14 riskoff_cluster_5d"
+      - id: fwd_dormancy_spike_long
+        spec: "INVERSE: dormancy >= trailing prior p90 -> LONG +7d.
+          Declared short side lost -87133bp over 287 events (Sharpe
+          -2.91, bb_p=0.001, era-consistent) — old-coin distribution
+          spikes precede upside, not overhang."
+        origin: "round15 dormancy_spike_short_7d anti-predictive KILL;
+          same cutoff group (declared 2026-09-28, boundary 09-29)"
+
+# ── Harness v2 + systematic screen (2026-09-23) ──────────────────────────
+# (harness_v2 key above: era_breakdown + block_bootstrap diagnostics)
+harmony_screen:
+  protocol: "two-stage: discovery <=2024-12-31, BH-FDR q=0.10 step-up,
+    holdout >=2025-01-01 same-sign + p<0.10. Spearman IC, signal lag-1,
+    open-to-open returns, horizons 21d/7d."
+  universe: "5488 numeric cols of harmony_master_clean"
+  result: "3748 confirmed BUT massively collinear — ~4-5 distinct factors"
+  factors:
+    - "valuation-level mean reversion (ETF AUM/TVL/cost-basis/price levels;
+      ic~-0.2..-0.4, thousands of cols) — dominant, overlaps known trend factor"
+    - "OI level -> 21d reversion (3 independent sources agree: ic~-0.25/-0.30)"
+    - "coinbase premium -> positive (ic +0.19/+0.35, small but sign-consistent)"
+    - "small-holder cohorts (shrimp/humpback/retention) -> positive"
+  caveat: "publication lag not modeled (FRED/BIS); level series nonstationary;
+    confirmed != tradeable — feeds future family declarations only"
+  artifacts: ["reports/harmony_screen.md", "reports/harmony_screen.csv"]
+
+# ── Round 6: cross-sectional expansion + new-mechanism batch ─────────────
+# Declared 2026-09-23 BEFORE any evaluation on the expanded universe.
+# Rationale (user-directed): hypothesis throughput is the bottleneck, not
+# time — mechanisms below are ex-ante reasoned (microstructure/macro
+# priors), not mined from this data, so in-sample evaluation is legitimate
+# discovery; only data-derived leads require forward freeze.
+#
+# Universe expansion: coin basket BTC, SOL + ETH, XRP, DOGE, AVAX, LINK
+# (all long-listed on both HL and Binance USD-M). Same backfill tools,
+# same data_extended/ layout. Cross-asset pooling raises effective n.
+round6_candidates:
+  data: "data_extended/ expanded to 7 assets: HL funding+candles per coin;
+         Binance funding/1h klines/OI/taker per USDT perp"
+  trial_accounting: "n_families effective 18 -> 26 (8 new families)"
+  candidates:
+    - id: xasset_btc_leads_alts
+      family: XASSET-LEADLAG
+      mechanism: "information diffuses large->small cap: a large BTC 1h move
+                  is followed by same-direction alt moves"
+      spec: "BTC 1h |ret| >= rolling p90 (win=2160 bars); event per alt
+             (SOL,ETH,XRP,DOGE,AVAX,LINK) on aligned HL 1h grid;
+             dir = sign(btc_ret); eval alt close[i]->close[i+1]"
+      falsification: "pooled hit ~0.50 or net <= 0 after 10bp"
+    - id: funding_xasset_rv
+      family: XASSET-FUNDING-RV
+      mechanism: "relative crowding mean-reverts across perps: a coin whose
+                  funding is extreme vs the contemporaneous basket median
+                  is crowded -> underperforms"
+      spec: "per coin per hour: spread = rate - median(all-coin rate at
+             t); fire |spread| >= rolling p90 (win=2160); dir=-sign(spread);
+             eval +24h (6x4h) on that coin's HL 4h bars; cooldown 6 bars"
+      falsification: "same gates"
+    - id: hl_premium_disloc
+      family: MARK-DISLOC
+      mechanism: "HL funding rows carry the sampled premium (mark vs oracle
+                  stretch); extreme |premium| = mark dislocation -> snap back"
+      spec: "fire |premium| >= rolling p90 of |premium| (win=2160, min 720);
+             dir = -sign(premium); eval +8h (2x4h); cooldown 2 events/asset"
+      falsification: "same gates"
+    - id: funding_run_persistence
+      family: FUNDING-DURATION
+      mechanism: "durable one-sided funding = structural positioning
+                  imbalance that persists -> price drifts with funding sign
+                  (duration trigger, NOT level extreme — adjacent to killed
+                  FRA family; declared distinct, billed as new family)"
+      spec: "same-sign streak >= 24 consecutive hourly prints; fire at
+             streak end (sign flip or window end); dir=sign(streak rate);
+             eval +24h (6x4h)"
+      falsification: "same gates"
+    - id: serialcorr_15m_bounce
+      family: MICRO-BOUNCE
+      mechanism: "short-horizon order-flow reversion (bid-ask bounce proxy):
+                  outsized 15m bars partially retrace next bar"
+      spec: "15m |ret| >= rolling p90 (win=2880 ~30d, min 960); dir =
+             -sign(ret); eval next 15m close; pooled 7 coins (~52d each)"
+      falsification: "same gates; adjacency to killed FLUSH-1 noted —
+             trigger is |ret| alone (no wick/volume conjunct), finer
+             horizon (15m vs 4h eval)"
+    - id: equity_lead_btc_5d
+      family: MACRO-BETA
+      mechanism: "equity risk transmission: large 5d Nasdaq moves transmit
+                  to BTC with a lag"
+      spec: "harmony daily: |fred_nasdaq 5d ret| >= rolling-252d p90 ->
+             BTC same-dir next 5d close-close; 5d cooldown"
+      falsification: "same gates; FRED publication lag caveat inherited"
+    - id: oi_crowding_fade
+      family: OI-CROWD
+      mechanism: "OI surging while funding is extreme = freshly crowded
+                  positioning -> squeeze/fade fuel"
+      spec: "Binance oi_hist_1h: oi_chg24h >= rolling p90 AND |bn_rate|
+             >= its rolling p90 jointly -> dir=-sign(rate), eval +24h
+             (6x4h) on HL bars; ~30d OI window => declared
+             UNDERPOWERED-prone; pooled BTC+SOL"
+      falsification: "same gates"
+    - id: taker_toxicity_1h
+      family: TOXIC-FLOW
+      mechanism: "extreme aggressive-flow imbalance is toxic: taker
+                  buy/sell ratio extremes fade next hour"
+      spec: "Binance takerlongshortRatio 1h: ratio >= rolling p95 ->
+             SHORT next-1h, <= p5 -> LONG; eval HL 1h close-close;
+             ~30d window => declared UNDERPOWERED-prone; pooled BTC+SOL"
+      falsification: "same gates"
+  results:
+    xasset_btc_leads_alts: "KILL — n=2100 pooled 6 alts (1h coverage
+      208d=>all 2026), hit .446, net -29656bp, bb_p<.001. ANTI-predictive:
+      large BTC moves precede alt REVERSAL at 1h (inverse hit ~.554 gross
+      before fees). Inverse recorded as lead only."
+    funding_xasset_rv: "KILL — n=4028, hit .487, net -177267bp, placebo
+      p=.013. BTC leg +7479bp vs alts all negative — basket-relative
+      funding fade loses; per-asset asymmetry noted."
+    hl_premium_disloc: "KILL — n=6403, hit .442, net -319021bp,
+      bb_p<.001. Strongly anti-predictive: premium sign CONTINUES at +8h
+      (~.558 gross). Inverse direction = candidate forward lead (must
+      cover 10bp RT + adverse selection on entry)."
+    funding_run_persistence: "KILL — n=963, hit .413, net -87268bp.
+      Long same-sign streaks REVERT (inverse ~.587 gross) — duration
+      herding unwinds, does not drift. Inverse = lead."
+    serialcorr_15m_bounce: "KILL — n=3919, hit .518 (Wilson lo .503,
+      gate PASS) BUT net -46704bp: genuine 15m bounce exists yet mean
+      gross ~1.9bp < 10bp RT. Sub-fee microstructure — untradeable."
+    equity_lead_btc_5d: "WATCH — n=233, hit .532, net +6623bp, Sharpe .18,
+      DSR .001, placebo p<.001? (placebo p=.000 on sparse daily events —
+      treat as weak). Era-mixed; nasdaq-lead direction positive but thin."
+    oi_crowding_fade: "UNDERPOWERED — n=1 on ~21d OI window. Needs OI
+      history accrual or S3 archive."
+    taker_toxicity_1h: "UNDERPOWERED — n=50, span=10d <30d gate. Daily
+      refresh accrues the window; re-eligible ~2026-10-14."
+  note: "Round 6 adds a systematic pattern: microstructure/funding signals
+    are repeatedly ANTI-predictive — inverse directions are leads, NOT
+    promotions (declared forward-only per framework). Three new inverse
+    leads queued below; serialcorr shows a real-but-sub-fee effect."
+  report: reports/report_round6.md
+
+# ── Round 7: 40/125 DMA trend retest (declared 2026-09-23 BEFORE eval) ───
+# User-requested. Honest classification: TREND-family retest at a longer
+# timescale — NOT a new mechanism (TREND-1/TREND-2 are powered KILLs).
+# Billed to TREND family in trial accounting per retests convention;
+# legitimate because the timescale differs materially (effective lookback
+# ~60-125d vs 14d). A pass would imply timescale-dependence, not rescue
+# the killed short-horizon variants.
+round7_dmaretest:
+  family_billing: "TREND (retest — counts in family deflation)"
+  trial_accounting: "total_signal_evaluations 29 -> 31 (2 retests billed
+    to TREND); effective_families stays 26"
+  candidates:
+    - id: dma_40_125_cross_1d
+      spec: "HL daily closes, all 7 assets: SMA40 vs SMA125 of close;
+             event on spread sign change (golden cross -> LONG, death
+             cross -> SHORT); eval close -> close +30d; uncovered tail
+             emits NaN. Expected low n — canonical form."
+      falsification: "hit ~0.50 or net <= 0 after 10bp"
+    - id: dma_40_125_cross_4h
+      spec: "same structure on 4h bars (7d/21d timescale): cross ->
+             dir=sign(spread); eval +30 bars (5d); pooled 7 assets.
+             Powered variant of the same mechanism."
+      falsification: "same gates"
+  results:
+    dma_40_125_cross_1d: "WATCH — n=69, hit .565 (Wilson lo .448 gate FAIL),
+      net +52478bp, Sharpe 3.97, DSR 1.000 BUT placebo p=.191 (random-timed
+      entry matches ~1-in-5) and era split is the tell: 2023 +25830 |
+      2024 +25313 | 2025 +8464 | 2026 -7129. Bull-era beta, not cross-timing
+      skill; modern era negative. XRP leg negative."
+    dma_40_125_cross_4h: "KILL — n=318 powered, hit .531, net -9663bp,
+      Sharpe -0.62, placebo .545. 7d/21d crosses do not predict 5d fwd
+      after costs; decaying across all eras."
+  note: "TREND retest verdict: the mechanism survives only as weak,
+    decaying daily-scale beta — consistent with the round-4 survivor-stat
+    pattern (statistically positive history, economically dead present)."
+  report: reports/report_round7.md
+
+# ── Round 8: throughput batch — 10 hypotheses (declared 2026-09-23 BEFORE
+#    execution). All mechanisms ex-ante reasoned; none mutate killed
+#    families. Two are honest family RETESTS on deeper data, billed to
+#    their families. 8 new families: 26 -> 34 effective.
+round8_batch:
+  trial_accounting: "effective_families 26 -> 34; total_signal_evaluations
+    31 -> 41 (8 new families + TOXIC-FLOW retest + MRV retest)"
+  candidates:
+    - id: rv_spike_fade_4h
+      family: VOL-SHOCK
+      mechanism: "volatility shock absorption: a 4h move many times trailing
+                  realized vol is a liquidity shock that partially reverts"
+      spec: "|ret_4h| >= 2.5 * RV42 (stdev of prior 42 bar-rets); dir =
+             -sign(ret); eval next 4h close-close; pooled 7 assets x833d"
+      falsification: "hit ~0.50 or net <= 0 after 10bp"
+    - id: volume_climax_fade
+      family: VOLUME-CLIMAX
+      mechanism: "exhaustion prints: extreme volume + extreme move marks a
+                  buying/selling climax -> next-bar fade"
+      spec: "4h bars: v >= rolling p99 (win 2160, min 720) AND |ret| >= p90
+             jointly -> dir=-sign(ret); eval +4h; pooled 7"
+      falsification: "same gates"
+    - id: funding_flip_momentum
+      family: FUNDING-FLIP
+      mechanism: "positioning regime transition: funding sign change marks
+                  a positioning flip that drifts with the new sign"
+      spec: "rate[i] sign != rate[i-1] sign (both nonzero); dir =
+             sign(rate[i]); eval +24h (6x4h); pooled 7"
+      falsification: "same gates"
+    - id: trapped_positioning_squeeze
+      family: SQUEEZE
+      mechanism: "crowded wrong-way positioning unwinds: price fell >=3%/24h
+                  while funding stayed positive = longs trapped paying ->
+                  SHORT continuation; symmetric for trapped shorts"
+      spec: "24h price ret <= -3% AND rate>0 -> SHORT; ret >= +3% AND
+             rate<0 -> LONG; eval +24h (6x4h); cooldown 6; pooled 7"
+      falsification: "same gates"
+    - id: alt_resid_reversal_1d
+      family: RESID-REV
+      mechanism: "idiosyncratic alt moves revert: residual = alt_ret -
+                  beta*btc_ret extremes are coin-specific overreactions"
+      spec: "daily: resid = alt_ret - beta*btc_ret (beta=rolling-90d OLS);
+             |resid| >= rolling-252d p90 -> dir=-sign(resid); eval +1d;
+             cooldown 1d; pooled 6 alts"
+      falsification: "same gates"
+    - id: drawdown_bounce_1d
+      family: CAPITULATION
+      mechanism: "deep drawdowns from the rolling high mark capitulation
+                  that bounces"
+      spec: "close <= rolling-90d high * 0.85 (>=15% drawdown) -> LONG;
+             eval +7d; cooldown 7d; pooled 7 assets x 1210d"
+      falsification: "same gates"
+    - id: month_end_drift_1d
+      family: CAL-REBAL
+      mechanism: "institutional month-end rebalancing flow drifts price
+                  (calendar domain adjacent to cal_weekend_drift survivor —
+                  declared as its own family, no inherited credibility)"
+      spec: "last 2 calendar days of month -> LONG; eval +2d close-close;
+             pooled 7 assets; ~26 events/asset"
+      falsification: "same gates"
+    - id: taker_share_fade_1h
+      family: TOXIC-FLOW
+      retest: "same mechanism as underpowered taker_toxicity_1h but on the
+               DEEP dataset: klines carry taker_buy_vol for 2y (~17.5k hrs)
+               vs the 21d futures/data window. Billed to TOXIC-FLOW."
+      mechanism: "aggressive-flow share extremes are toxic -> fade"
+      spec: "share = taker_buy_vol/v per Binance 1h kline; share >= rolling
+             p95 (win 2160, min 720) -> SHORT next-1h on HL bars; <= p5 ->
+             LONG; pooled BTC+SOL (+others where klines exist)"
+      falsification: "same gates"
+    - id: vix_spike_btc_long
+      family: MACRO-VOL
+      mechanism: "equity-vol spikes are risk capitulation that resolves into
+                  a bounce for high-beta assets"
+      spec: "harmony daily: fred_vix 5d change >= rolling-252d p90 -> BTC
+             LONG +5d; 5d cooldown (vix ffilled <=4 rows, weekday market)"
+      falsification: "same gates"
+    - id: rsi2_connors_1d
+      family: MRV
+      retest: "billed to MRV (RSI-reversion family retest at a different
+               horizon/param: RSI-2 daily vs killed RSI-14 1h)"
+      mechanism: "published Connors RSI-2 baseline: 2-day RSI extremes mark
+                  1-day reversals"
+      spec: "RSI(2) on daily close <=5 -> LONG / >=95 -> SHORT; eval +1d;
+             no cooldown stacking (one event per extreme day); pooled 7"
+      falsification: "same gates"
+  results:
+    rv_spike_fade_4h: "KILL — n=1302, hit .520, net -18053bp. Shock fades
+      win marginally gross but sub-fee; 2024 positive, 25/26 negative."
+    volume_climax_fade: "KILL — n=395, hit .514, net -4896bp, placebo .651.
+      Climax-exhaustion not supported."
+    funding_flip_momentum: "MODEL_RISK resolved to confound — follow-up
+      decomposition (declared): flips aligned with prior-24h return n=5165
+      hit .614 +90.4bp/ev; COUNTER to prior-24h return n=4878 hit .426
+      -77.3bp/ev. The flip itself contributes nothing; the edge was 24h
+      momentum continuation in disguise. Funding-flip mechanism dead;
+      isolated momentum observation forward-declared as fwd_mom24h_cont."
+    trapped_positioning_squeeze: "KILL — n=1672, hit .483, net -17415bp.
+      Trapped-positioning unwind thesis not supported at 24h."
+    alt_resid_reversal_1d: "KILL — n=464, hit .461, net -32681bp, bb_p=.006.
+      ANTI-predictive: alt idiosyncratic moves CONTINUE next day (~.539
+      gross implied). Inverse = lead."
+    drawdown_bounce_1d: "WATCH — n=693, net +16412bp but era decay:
+      2024 +36299 -> 2025 -13369 -> 2026 -17769. Bull-era artifact pattern."
+    month_end_drift_1d: "WATCH — n=546, net +3397bp, Sharpe .07. Noise-level."
+    taker_share_fade_1h: "KILL — powered retest, n=3743 on 2y klines, net
+      -40324bp, Sharpe -12.37. TOXIC-FLOW family now powered-dead."
+    vix_spike_btc_long: "WATCH — n=203, net +6440bp, hit .473 (gate FAIL),
+      era-mixed with recent negative. Placebo p<.001 on sparse daily events
+      treated cautiously."
+    rsi2_connors_1d: "KILL — n=2891, hit .507, net -56850bp. Published
+      Connors baseline does not transfer to this venue."
+  report: reports/report_round8.md
+
+# ── Round 9: mechanism-diverse throughput batch — 10 hypotheses (declared
+#    2026-09-23 BEFORE execution). Deliberately NOT momentum-themed: carry
+#    income, session timing, breadth, cross-asset rotation, vol-regime,
+#    thin-volume divergence. 5 new families; 1 billed retest.
+round9_batch:
+  trial_accounting: "effective_families 34 -> 39 (VOL-REGIME, CARRY,
+    SESSION, BREADTH, ROTATION new); total_signal_evaluations 41 -> 51
+    (VOLUME-CLIMAX divergence variant billed to family)"
+  candidates:
+    - id: compression_breakout_4h
+      family: VOL-REGIME
+      mechanism: "volatility expands persistently out of compression:
+                  a squeezed range resolves into a directional expansion
+                  that continues (regime mechanism, not a momentum claim —
+                  direction is set by the expansion bar, not prior drift)"
+      spec: "BB-width = 4*sd20/ma20 <= rolling p15 (win 2160, min 720) at
+             bar i-1 AND |ret_i| >= 2*RV42 (expansion bar) -> dir=sign(ret_i);
+             eval +6 bars (24h); cooldown 6; pooled 7 assets x 4h"
+      falsification: "hit ~0.50 or net <= 0 after 10bp"
+    - id: funding_carry_24h
+      family: CARRY
+      mechanism: "funding is a real cash flow: take the side that COLLECTS
+                  an extreme rate for 3 epochs — income-based economics,
+                  not price prediction (first non-directional-alpha test)"
+      spec: "rate >= rolling p90 (win 1080 prints ~1y, min 360) -> SHORT;
+             rate <= p10 -> LONG; hold 24h; gross = dir*px_ret +
+             (-dir)*sum(next 3 realized rates); cooldown 3 prints; pooled 7"
+      falsification: "net <= 0 after 10bp or income component < fee"
+    - id: us_session_drift
+      family: SESSION
+      mechanism: "documented cross-asset effect: crypto returns concentrate
+                  in US institutional hours"
+      spec: "long only the 12:00-24:00 UTC segment daily (signal on the
+             08:00-start 4h bar, exit close of 20:00 bar, horizon 3);
+             dir=+1; pooled 7"
+      falsification: "same gates; placebo over random same-length windows"
+    - id: asia_session_drift
+      family: SESSION
+      mechanism: "complement segment test: Asia overnight hours carry the
+                  residual drift (or are flat-to-negative)"
+      spec: "long only 00:00-08:00 UTC daily (signal on 20:00-start bar,
+             exit close of 04:00 bar, horizon 2); dir=+1; pooled 7"
+      falsification: "same gates"
+    - id: us_session_momentum
+      family: SESSION
+      mechanism: "the US-session-opening bar's return encodes institutional
+                  flow direction that persists into the next day"
+      spec: "the 12:00-UTC-start 4h bar return -> dir=sign(ret); eval +6
+             bars (24h); pooled 7"
+      falsification: "same gates"
+    - id: breadth_thrust_1d
+      family: BREADTH
+      mechanism: "breadth thrust: near-unanimous up-days across the basket
+                  mark coordinated risk-on flow that persists"
+      spec: "daily: >=6/7 assets positive -> LONG every asset next day
+             (+1d); breadth includes own-leg ret (declared); pooled 7"
+      falsification: "same gates"
+    - id: breadth_washout_1d
+      family: BREADTH
+      mechanism: "breadth capitulation: <=1/7 up marks coordinated washout
+                  that bounces"
+      spec: "daily: <=1/7 assets positive -> LONG every asset next day;
+             pooled 7"
+      falsification: "same gates"
+    - id: volume_divergence_fade_1d
+      family: VOLUME-CLIMAX
+      retest: "billed to VOLUME-CLIMAX — opposite condition (thin-volume
+               moves, not climax prints); family gets the deflation credit"
+      mechanism: "moves on thin volume lack participation -> distribution/
+                  fade rather than exhaustion-continuation"
+      spec: "1d ret >= rolling-252d p70 AND v <= 0.5*vol20 -> SHORT;
+             ret <= p30 AND thin -> LONG; eval +1d; cooldown 1d; pooled 7"
+      falsification: "same gates"
+    - id: btc_alt_rotation_3d
+      family: ROTATION
+      mechanism: "cross-asset catch-up: when BTC's 7d move outruns an alt's
+                  (or vice versa), the laggard converges over 3d"
+      spec: "spread = btc7d_ret - alt7d_ret; |spread| >= rolling-252d p90
+             -> dir=sign(spread) on the ALT (long laggard); eval +3d;
+             cooldown 3d; pooled 6 alts"
+      falsification: "same gates"
+    - id: weekly_loser_bounce_1d
+      family: ROTATION
+      mechanism: "weekly cross-sectional reversion: the worst-performing
+                  alt over 7d attracts rotation bids, the best loses them"
+      spec: "rank 7d returns across 7 assets daily; worst -> LONG +7d,
+             best -> SHORT +7d; per-asset cooldown 7d; pooled 7"
+      falsification: "same gates"
+  results:
+    compression_breakout_4h: "KILL — n=387, hit .504, net -3931bp. Squeeze-
+      to-expansion continuation not supported; 2025 deeply negative."
+    funding_carry_24h: "KILL — corrected for HL HOURLY funding prints
+      (v1 assumed 8h epochs): n=3387 non-overlapping days, hit .490,
+      net -89015bp. Realized carry +6501bp vs adverse price -61646bp:
+      income ~1.9bp/event vs adverse move ~-18bp/event. Extreme funding
+      marks continuation against the collector. CARRY dead."
+    us_session_drift: "KILL — n=5831, hit .480, net -52104bp. US-hours
+      long-drift does not survive fees."
+    asia_session_drift: "KILL — n=5833, hit .517 (Wilson lo .504 PASS) but
+      net -38714bp — a real gross drift that is sub-fee; untradeable."
+    us_session_momentum: "KILL — n=5817, hit .485, net -63272bp. Session-
+      open bar does not persist."
+    breadth_thrust_1d: "WATCH — n=2954, net +18145bp but hit .487 (gate
+      FAIL), placebo .944, eras mixed. Noise-level positive."
+    breadth_washout_1d: "KILL — n=3031, net -5862bp. 2023 +33915 decayed
+      to negative 2025/2026 — era artifact."
+    volume_divergence_fade_1d: "KILL — n=456, hit .491, net -19187bp,
+      bb_p=.011. Thin-volume moves CONTINUE; distribution-fade wrong."
+    btc_alt_rotation_3d: "KILL — n=261, hit .506, net -5938bp. No catch-up
+      convergence at 3d."
+    weekly_loser_bounce_1d: "KILL — n=617, hit .489, net -31168bp. Weekly
+      cross-sectional reversion not supported."
+  report: reports/report_round9.md
+
+# ── Round 10: FLAGSHIP PORT — cross-validation of Sentinely's strongest
+#    retrospective system (mega_screen base+N+V ~Sharpe 1.45, BTC daily,
+#    15bps, t+1) inside this falsification stack on different venue/assets
+#    at honest 10bp RT (5bp per unit position change). Declared 2026-09-23
+#    BEFORE execution. Exact spec ported from upstream/research/
+#    mega_screen_20260907.py — no re-optimization.
+round10_flagship_port:
+  provenance: "upstream/research/mega_screen_20260907.py verbatim spec;
+    netflow source = research/cm_exchange_flows_20260907.csv (CM FlowIn/
+    OutExUSD, flash/provisional statuses — declared limitation);
+    mvrv = harmony macro_daily 'mvrv' (raw ratio, V-leg threshold >2.5);
+    supply schedule = fixed halving table copied verbatim"
+  trial_accounting: "effective_families 39 -> 40 (+FLAGSHIP-COMPOSITE);
+    total_signal_evaluations 51 -> 56 (base variants bill to TREND as
+    retests; composite variants are the new family)"
+  execution_model: "continuous daily position w in [0,1]; position applied
+    t+1 (w_{t-1} * ret_t); event frame = one event per invested day,
+    dir=sign(w), gross=w*ret*1e4, turnover charged at 5bp per unit |dw|
+    allocated inside episodes (entry leg to entry day, exit leg to last
+    invested day); uncovered tail emits NaN"
+  specs:
+    base_s45125: "w = 0.5*(px>SMA45) + 0.5*((px>SMA125)&(SMA125>SMA125-5d))"
+    v60_variant: "w = base * clip(0.60/RV30ann, 0, 1) — reported diagnostic"
+    N_brake: "ncm = 7d-sum(CM FlowIn-FlowOut USD)/(px*supply); stress =
+      ncm > shift(1).rolling(365,min300).q90 -> w *= (1-0.5*stress)"
+    V_brake: "w *= (1 - 0.25*(mvrv > 2.5))"
+  candidates:
+    - id: flagship_base_btc
+      family: TREND
+      retest: "billed to TREND — long-span replication of the base core"
+      spec: "s45125 on harmony btc_price, eval clock 2013-01-01 -> end"
+      falsification: "Sharpe <= 0 net of fees, placebo p > .10, or modern
+        era (2024+) non-positive"
+    - id: flagship_composite_btc
+      family: FLAGSHIP-COMPOSITE
+      spec: "base+N+V on harmony btc_price — THE flagship claim (~1.45
+        retrospective at 15bps); ours at 10bp RT"
+      falsification: "same gates; headline comparison vs buyhold Sharpe"
+    - id: flagship_composite_hlbtc
+      family: FLAGSHIP-COMPOSITE
+      spec: "same composite on Hyperliquid BTC perp daily (venue shift;
+        BTC-native N/V brakes modulate HL price exposure), 2023-06+"
+      falsification: "same gates"
+    - id: flagship_base_alts
+      family: TREND
+      retest: "billed to TREND — trend core on 6 alts"
+      spec: "s45125 on each alt's HL daily; pooled"
+      falsification: "same gates"
+    - id: flagship_composite_alts
+      family: FLAGSHIP-COMPOSITE
+      spec: "full composite on 6 alts: alt price trend + BTC netflow/MVRV
+        brakes (BTC network state modulates alt exposure); pooled"
+      falsification: "same gates"
+    - id: flagship_composite_bnbtc
+      family: FLAGSHIP-COMPOSITE
+      spec: "EXTENSION declared 2026-09-23 post-data-expansion: same
+        composite on Binance USD-M BTCUSDT perp daily (2019-09+ listing,
+        covers 2021 bull + 2022 bear on perp pricing); N/V brakes from
+        BTC network data unchanged"
+      falsification: "same gates — the era-diverse venue-shift test the
+        HL 2023+ window could not provide"
+  results:
+    flagship_base_btc: "RESEARCH_SUPPORTED — first full-stack pass:
+      n=3419 invested days, hit .537, Wilson lo .520 PASS, net +123264bp,
+      Sharpe 1.65 (continuous 1.72), DSR .980, placebo p<.001, era-
+      consistent 2013-2026 incl. bear years. CAGR 163%, MaxDD -0.71.
+      Caveat: modern-era thin (2025 +1024bp, 2026 +852bp) — the trend
+      premium persists but earns little recently."
+    flagship_composite_btc: "RESEARCH_SUPPORTED — Sharpe 1.66 (continuous
+      1.76), net +94233bp, DSR .984, placebo <.001. N+V brakes trade
+      return for drawdown (MaxDD -0.58 vs -0.71, CAGR 122% vs 163%) —
+      defensive value confirmed, not return-enhancing."
+    flagship_composite_hlbtc: "MODEL_RISK — continuous SR 1.62 on HL BTC
+      2023+ but hit .513 (Wilson FAIL), placebo p=.488: on a bull-heavy
+      modern window the position stream is indistinguishable from
+      long-beta (buyhold SR .99). Timing value unresolved at this span."
+    flagship_base_alts: "MODEL_RISK — SR 1.30 pooled, hit .500 (Wilson
+      FAIL), placebo .846. Alt trend = beta on this window."
+    flagship_composite_alts: "MODEL_RISK — SR 1.19, placebo .909; BTC-
+      network brakes did NOT transfer to alts (2025 era went negative
+      -3390 vs +3692 base — brakes cut winning exposure)."
+    flagship_composite_bnbtc: "WATCH — the venue-shift test that changed
+      the picture: Binance USD-M BTCUSDT perp daily 2019-09+, n=1662,
+      Sharpe 1.63 (cont. 1.62), net +36496bp, DSR .929, placebo p=.001,
+      bb_p<.001, era-consistent incl. 2022 bear (-2323bp contained loss,
+      not dominant). Wilson FAIL (hit .515, lo .491) — timing edge comes
+      from return asymmetry, not hit rate. Interprets the HL MODEL_RISK
+      as span-starvation, not mechanism failure."
+  cross_validation_verdict: "Sentinely flagship REPLICATES on TWO
+    independent clocks and a second venue (Binance perp 2019+ incl. the
+    2022 bear: placebo .001, bb <.001). The mechanism — long-horizon
+    trend timing on BTC — is statistically supported cross-venue; hit
+    rate sits ~51.5% so Wilson gates on hit-rate shape, not value.
+    Asset shift still fails (alts = beta, brakes don't transfer).
+    Modern-era thinness persists on both venues (2025-26 ~+900bp/yr).
+    Forward-shadow declared: fwd_flagship_hlbtc (base+V on HL BTC
+    daily) accrues the honest post-cutoff record."
+  report: reports/report_round10.md
+
+# ── Round 11: new-data-domain batch (declared 2026-09-23 BEFORE execution)
+# Five mechanisms only testable after the data expansion: options vol
+# surface (DVOL/IV/skew 2021+), liquidation cascades (2022-12+),
+# mark-index basis (Binance premiumIndexKlines 2019+), cross-venue
+# funding aggregates, on-chain stress/flow (2010+, per-column spans).
+# All on harmony_extended.csv daily clock unless noted; BTC price leg on
+# btc_price; event convention: signal day d -> entry close d -> eval +k d.
+round11_batch:
+  declared: "2026-09-23, pre-execution; specs frozen in this block"
+  cost: "10bp RT; 1bp deadband; powered n>=30 & span>=30d"
+  candidates:
+    - id: dvol_spike_bounce_1d
+      family: OPTIONS-VOL
+      spec: "dvol 1d change >= rolling-365d-prior p90 -> LONG BTC +1d
+        (vol spike = capitulation pricing -> bounce)"
+      falsification: "net<=0, placebo p>.10, or powered negative"
+    - id: skew_extreme_reversal_3d
+      family: OPTIONS-VOL
+      spec: "skew25_1m <= p10 -> LONG +3d; >= p90 -> SHORT +3d (put-call
+        premium extremes are contrarian fear/greed reads)"
+      falsification: "same gates"
+    - id: iv_term_inversion_3d
+      family: OPTIONS-VOL
+      spec: "iv_atm_1w > iv_atm_3m (term inversion = stress) -> LONG +3d"
+      falsification: "same gates"
+    - id: liq_cascade_cont_1d
+      family: LIQUIDATION
+      spec: "liq_total_archive >= rolling-365d-prior p90 -> dir =
+        sign(day ret), +1d (forced flow begets flow)"
+      falsification: "same gates"
+    - id: liq_flush_bounce_1d
+      family: LIQUIDATION
+      spec: "liq_long_usd >= rolling-365d-prior p90 (longs flushed) ->
+        LONG +1d (exhaustion bounce)"
+      falsification: "same gates"
+    - id: premium_basis_converge_1d
+      family: BASIS-CONVERGENCE
+      spec: "|Binance premiumIndex daily close| >= rolling-365d-prior p90
+        -> dir = -sign(premium), +1d, pooled 7 USDT perps (mark-index
+        dislocation converges)"
+      falsification: "same gates"
+    - id: funding_consensus_drift_1d
+      family: XVENUE-FUNDING
+      spec: "funding_agg_archive 3d-sum >= rolling-365d-prior p90 ->
+        LONG BTC +1d; <= p10 -> SHORT +1d (cross-venue positioning
+        consensus = trend fuel, not fade)"
+      falsification: "same gates"
+    - id: lth_sopr_capitulation_7d
+      family: ONCHAIN-STRESS
+      spec: "lth_sopr <= rolling-365d-prior p10 -> LONG BTC +7d
+        (strong-hands loss-realization = capitulation bottom thesis)"
+      falsification: "same gates"
+    - id: nrpl_spike_top_3d
+      family: ONCHAIN-FLOW
+      spec: "nrpl_usd >= rolling-365d-prior p90 (mass profit-taking) ->
+        SHORT BTC +3d (realization spikes mark local tops)"
+      falsification: "same gates"
+    - id: exchange_balance_drift_7d
+      family: ONCHAIN-FLOW
+      spec: "exchange_balance_total 7d change <= p10 (outflow/
+        accumulation) -> LONG +7d; >= p90 (inflow/distribution) ->
+        SHORT +7d"
+      falsification: "same gates"
+  trial_accounting: "6 new families (OPTIONS-VOL, LIQUIDATION,
+    BASIS-CONVERGENCE, XVENUE-FUNDING, ONCHAIN-STRESS, ONCHAIN-FLOW);
+    effective family count 40 -> 46"
+  errata: "lineage substitutions (same semantics, deeper coverage —
+    not spec changes): (1) eval clock c = px_bitstamp (2011+ -> 2026-09)
+    replacing btc_price which truncates 2023-12-13 upstream;
+    (2) liq total = liq_long_usd + liq_short_usd (2022-12+) replacing
+    liq_total_archive (2026-03+ only). Both recorded before re-run."
+  results:
+    dvol_spike_bounce_1d: "KILL — n=138, hit .471, net -235bp. Vol spikes
+      don't bounce on this clock."
+    skew_extreme_reversal_3d: "WATCH — n=114, +5186bp, Sharpe .85,
+      placebo .039, bb .066. Positive but era-decayed (2025-26 negative)."
+    iv_term_inversion_3d: "WATCH — n=150, +5881bp, Sharpe .60, placebo
+      .144 — mostly a 2024 event (+4439), era-mixed."
+    liq_cascade_cont_1d: "KILL — n=143, hit .476, net -3611bp. Forced
+      flow does not continue next day."
+    liq_flush_bounce_1d: "WATCH — n=136, hit .559 but net only +1520bp,
+      era-mixed (2023 +1917 -> flat/neg)."
+    premium_basis_converge_1d: "WATCH — n=1044 pooled 7 perps, hit .548
+      Wilson lo .518 PASS, net +23299bp BUT Sharpe .40, DSR .031, splits
+      mixed, eras whipsaw (2020 -7174 / 2022 +14838 / 2026 -1472); LINK
+      +14214 carries. Real but inconsistent convergence economics."
+    funding_consensus_drift_1d: "KILL — n=47, net -2679bp on the 2024+
+      powered window. Cross-venue funding consensus is not trend fuel."
+    lth_sopr_capitulation_7d: "KILL — n=105, hit .476, net -2026bp.
+      2022 -7623 shows LTH loss-taking deepens before it bottoms — the
+      upstream card's own caveat confirmed on data."
+    nrpl_spike_top_3d: "KILL (ANTI-PREDICTIVE) — n=317, hit .401 on the
+      declared SHORT, net -77431bp, Sharpe -1.97, bb_p<.001, consistent
+      across 2012-2026. Profit-realization spikes mark CONTINUATION,
+      not tops. Inverse forward-declared: fwd_nrpl_cont."
+    exchange_balance_drift_7d: "KILL — n=281, net -11457bp on the
+      repaired Bitstamp clock (the truncated-clock +49.9k was a 2011
+      venue-composite artifact). Flow direction doesn't predict 7d."
+  note: "nrpl_spike_top is the second strongly anti-predictive daily
+    on-chain signal (alt_resid was the first). Its inverse is a
+    data-derived lead -> forward-declared, not scored in-sample."
+  report: reports/report_round11.md
+  revision_probe: "CM flow lineage check 2026-09-23: old frozen CSV vs
+    refreshed coinmetrics_daily — 0/5609 stress-flag flips on overlap;
+    composite stats identical (SR 1.76, CAGR 1.22, MaxDD -0.58). N-leg
+    is refresh-stable. Does NOT address print-time flash revisions."
+
+# ── Round 12: remaining untested columns (declared 2026-09-23 BEFORE
+#     execution). CME OI = institutional positioning; coinbase premium =
+#     US-session flow; dormancy = old-coin movement; puell/reserve_risk =
+#     miner/cycle economics; venue funding spreads; on-chain sides not
+#     yet probed. Daily clock, c=px_bitstamp, same event convention.
+round12_batch:
+  declared: "2026-09-23, pre-execution"
+  cost: "10bp RT; 1bp deadband; powered n>=30, span>=30d, n_eff>=30"
+  candidates:
+    - id: cme_oi_confirm_3d
+      family: CME-POSITIONING
+      spec: "cme_oi 7d change >= prior p90 -> dir=sign(7d px ret), +3d
+        (institutional OI build confirms prevailing direction)"
+      falsification: "net<=0, placebo>.10, or powered negative"
+    - id: coinbase_premium_drift_1d
+      family: VENUE-PREMIUM
+      spec: "coinbase_premium >= p90 -> LONG +1d; <= p10 -> SHORT +1d
+        (US venue premium = directional flow)"
+      falsification: "same gates"
+    - id: bybit_premium_drift_1d
+      family: VENUE-PREMIUM
+      spec: "bybit_premium >= p90 -> LONG +1d; <= p10 -> SHORT +1d
+        (perp mark-index premium = demand pressure)"
+      falsification: "same gates"
+    - id: dormancy_spike_fade_7d
+      family: ONCHAIN-FLOW
+      spec: "cdd 7d-sum >= prior p90 -> SHORT +7d (old coins moving =
+        distribution pressure)"
+      falsification: "same gates"
+    - id: puell_extreme_7d
+      family: MINER-ECON
+      spec: "puell >= p90 -> SHORT +7d (miners overpaid = sell
+        pressure); <= p10 -> LONG +7d"
+      falsification: "same gates"
+    - id: reserve_risk_regime_7d
+      family: CYCLE-VALUATION
+      spec: "reserve_risk <= p10 -> LONG +7d (confidence-high/price-low
+        accumulation zone); >= p90 -> SHORT +7d"
+      falsification: "same gates"
+    - id: lth_mvrv_extreme_7d
+      family: CYCLE-VALUATION
+      spec: "lth_mvrv >= p90 -> SHORT +7d (old hands deep in profit);
+        <= p10 -> LONG +7d"
+      falsification: "same gates"
+    - id: sth_sopr_loss_bounce_3d
+      family: ONCHAIN-STRESS
+      spec: "sth_sopr <= prior p10 -> LONG +3d (short-term capitulation
+        reset thesis)"
+      falsification: "same gates"
+    - id: nrpl_capitulation_3d
+      family: ONCHAIN-FLOW
+      retest: "complementary side of nrpl_spike_top (billed to same
+        family — no new trial)"
+      spec: "nrpl_usd <= prior p10 (mass loss-realization) -> LONG +3d"
+      falsification: "same gates"
+    - id: xvenue_funding_spread_1d
+      family: XVENUE-FUNDING
+      spec: "(funding_binance_um - funding_bybit) 3d-sum >= p90 ->
+        SHORT +1d; <= p10 -> LONG +1d (single-venue froth fades)"
+      falsification: "same gates"
+  trial_accounting: "4 new families (CME-POSITIONING, VENUE-PREMIUM,
+    MINER-ECON, CYCLE-VALUATION); effective family count 46 -> 50"
+  results:
+    cme_oi_confirm_3d: "WATCH — n=49, skill +64.1bp/ev t=1.00, placebo
+      .094 but era-concentrated (2023-24 positive, 2025-26 negative).
+      Institutional OI confirms trend only in bull windows."
+    coinbase_premium_drift_1d: "BLOCKED (leak) — Sharpe 7.68, hit 1.000
+      on n=178 tripped implausibility. Confirmed: corr(premium_d,
+      next-day ret) = 0.973 — the warehouse column embeds tomorrow's
+      return. Column QUARANTINED for daily-horizon use; the 'perfect'
+      result was look-ahead, exactly what the gate exists for."
+    bybit_premium_drift_1d: "KILL — n=290, net -5342bp, skill -6.3bp/ev."
+    dormancy_spike_fade_7d: "UNDERPOWERED — n=22 (cdd spikes rare since
+      2023). Net -3444bp directionally negative."
+    puell_extreme_7d: "KILL (ANTI-PREDICTIVE) — n=286, net -69804bp,
+      Sharpe -2.43, skill t=-3.15, symmetric both sides, era-consistent
+      2013-2025. Miner extremes CONTINUE. Inverse -> fwd_puell_extreme_cont."
+    reserve_risk_regime_7d: "KILL (ANTI-PREDICTIVE) — n=299, net -72131bp,
+      Sharpe -2.64, skill t=-3.63, symmetric, era-consistent. Cycle
+      valuation extremes TREND, not revert. Inverse -> fwd_reserve_risk_cont."
+    lth_mvrv_extreme_7d: "KILL — n=76, net -6966bp, skill -78bp/ev."
+    sth_sopr_loss_bounce_3d: "KILL — n=60, hit .600 but net +803bp only;
+      2026 era -3903bp flipped it. Bounce thesis decays."
+    nrpl_capitulation_3d: "KILL — n=197, net -13862bp. BOTH nrpl tails
+      now dead: p90 continues up, p10 continues down — extremes are
+      regime markers, not reversal triggers."
+    xvenue_funding_spread_1d: "WATCH — n=226, skill +42.3bp/ev t=2.07,
+      placebo .039, symmetric (L +24 / S +57), positive in 2026 (+2184).
+      Best new non-beta signal of the round; thin."
+  note: "Round 12's real output: (a) implausibility gate caught a
+    look-ahead column (coinbase_premium corr .97 vs next-day ret —
+    quarantined); (b) two strongly anti-predictive cycle-valuation
+    signals -> continuation inverses forward-declared; (c) nrpl now
+    dead BOTH directions; (d) xvenue funding spread = only two-sided
+    non-beta positive."
+  report: reports/report_round12.md
+
+# ── Round-11 forward lead (data-derived; declared post-observation at
+#     the next clean boundary — same convention as rounds 6/8/10) ──────
+  forward_lead: "fwd_nrpl_cont — nrpl_usd >= prior p90 -> LONG +3d
+    (inverse of killed nrpl_spike_top_3d). Cutoff 2026-09-24T00:00Z,
+    accrues via run_forward_eval.py."
+
+# ── WATCH drift-audit (2026-09-23, tools/analyze_watch.py) ────────────
+# Per-event decomposition: gross = dir*mu(same-asset window, event span)
+# + skill. Asked: does the signal beat the market's own drift?
+watch_audit:
+  method: "skill_bp = gross_bp - dir*unconditional-mean-window-ret*1e4;
+    t(skill) tests conditional excess; L/S split exposes disguised beta"
+  drift_artifacts: "vix_spike_btc_long (skill -122bp, market gave +164
+    on the same days — worse than passive), drawdown_bounce_1d (-69bp,
+    drift +103), month_end_drift_1d (-11bp), breadth_thrust_1d (+2bp,
+    t=0.27). These WATCHes are beta capture -> reclassify as
+    KILL-equivalent in any promotion math."
+  asymmetric_beta: "dma_40_125_1d (L +1840 / S -339 — long half only),
+    fng_extreme (L +475 / S -454 — fear side only, already declared as
+    fwd_fng_fear_long), equity_lead_btc_5d (skill sits on the SHORT
+    side: S +157 / L -78 — thesis direction inverted)"
+  genuine_non_beta: "premium_basis_converge_1d (skill +26.7bp, t=1.38,
+    L +26.6 / S +26.9 symmetric) and skew_extreme_reversal_3d (+50.9bp,
+    t=1.12, L +45 / S +59) — the only WATCHes whose edge is not
+    explained by 'market rose while long'. Thin/fee-bound but real."
+  flagship_note: "flagship_composite_bnbtc skill +8.5bp/invested-day
+    understates — per-day metric cannot see avoided flat-day drawdowns;
+    placebo .001 + bb<.001 + cross-venue replication stand as the
+    stronger evidence."
+
+# ── Code audit (2026-09-24, full-harness math/contract sweep) ───────────
+code_audit:
+  scope: "falsify.py, candidates*.py, run_*.py, morning_research.py,
+    analyze_watch.py, data.py loaders"
+  fixes:
+    - id: A1
+      severity: high
+      item: "drift_skill() measured market drift over CALENDAR days for
+        intraday events (1h/4h t_eval deltas < 1d produced ~zero drift
+        subtraction, and multi-day rounding drifted off-bar). Fixed:
+        per-event horizon = (t_eval - t) mapped onto the price frame's
+        own bars via searchsorted — bar-native, cadence-agnostic."
+    - id: A2
+      severity: high
+      item: "placebo_time_shift() was broken three ways: (a) astype(int64)
+        on string-t CSVs crashed; (b) dirty early prices (229 zero/
+        nonpositive rows, 1 NaN in harmony btc_price) made shifted
+        division yield NaN -> 'NaN >= real' False -> p=0.000 artifact
+        (every dirty-frame placebo was silently inflated toward
+        significance); (c) sampling drew from the FULL price history
+        including eras the candidate could never cover, and ignored
+        position weights w (weighted real vs full-size placebo ~2x
+        magnitude mismatch). Fixed: robust timestamp parsing, invalid-
+        price filter, sampling restricted to the event-covered window,
+        weight-preserving shifted returns. Flagship placebo re-ran on
+        legitimate math: base p=.002, composite p=.016-.021."
+    - id: A3
+      severity: high
+      item: "power_gate n_eff = span/median-horizon counted every invested
+        day as independent — a continuous-position frame with 3419 daily
+        events could contain a handful of position episodes. Fixed:
+        same-day/continuous frames count EPISODES (dir-change runs);
+        discrete frames keep horizon-based n_eff; raw median inspected
+        before clamping. Flagship BTC: n_eff=67 (episodes); hlbtc now
+        honestly n_eff=17 -> UNDERPOWERED."
+    - id: A4
+      severity: medium
+      item: "candidates_forward._invert() set hit = ret_bp > 0 (NET
+        convention) while the event contract + validate_events require
+        hit == gross_bp > DEADBAND_BP. 7 inverse-lead CSVs carried 300+
+        contract violations. Fixed to gross convention; all event files
+        re-validated clean."
+    - id: A5
+      severity: medium
+      item: "settle1_funding_drift recorded t_eval = eval-bar bucket-START
+        while event t = funding-print time (T+~73ms) -> 5250 events with
+        t_eval < t. Return was causal but the recorded exit instant was
+        wrong by one bucket. Fixed: t_eval = eval-bar CLOSE."
+    - id: A6
+      severity: medium
+      item: "ofi_imbalance_l2 used a fixed 8-ROW offset for the declared
+        8h horizon — correct only while journal cadence stays ~1h/row.
+        Fixed: forward row chosen by timestamp search (t + 8h), so the
+        horizon survives cadence changes."
+    - id: A7
+      severity: medium
+      item: "morning_research.collect_verdicts() read reports through
+        round10 only — round11/round12 verdicts silently absent from the
+        daily note. Fixed."
+    - id: A8
+      severity: low
+      item: "sharpe_stats()/min_track_record_length could raise
+        ValueError on extreme-moment streams (purgedcv internals) and
+        kill a whole round; now guarded. _autocorr_block_len floor
+        enforced at >=5 per docstring. mrv_rsi RSI edge case guarded.
+        analyze_watch.py duplicated buggy day-horizon math — replaced
+        with F.drift_skill call."
+    - id: A9
+      severity: low
+      item: "refresh_candles could skip >5000-bar gaps without paginating;
+        made gap-closing paginated."
+    - id: A10
+      severity: critical
+      item: "run_forward_eval compared event t via .astype('int64')
+        (unit-preserving: ms on candle-sourced frames) against
+        cutoff.value (always ns) — post-cutoff selection could NEVER be
+        true once data passed the cutoff. Masked while the post window
+        was genuinely empty; the forward arbiter would have reported
+        n=0 forever. Fixed to datetime-domain comparison. THIS is the
+        class of bug that silently zeroes the primary evidence channel."
+    - id: A11
+      severity: medium
+      item: "run_round10._stress() read the STATIC cm_exchange_flows_
+        20260907.csv — the refreshed coinmetrics pull (daily via
+        refresh_aux_sources, through 2026-09-22) was never consumed, so
+        the flagship N-leg was silently frozen at Sep-07. Fixed: prefer
+        the live frame, loud fallback to the static CSV."
+    - id: A12
+      severity: low
+      item: "power_gate episode boundary used gap > prev_horizon —
+        perfectly-tiled back-to-back trades (gap == horizon) merged into
+        one phantom episode. Fixed to >= (adjacent non-overlapping
+        windows are independent draws)."
+    - id: A13
+      severity: low
+      item: "pooled candidates' placebos drew shifted returns on a single
+        asset (BTC/SOL) for all legs. placebo_time_shift now accepts
+        {asset: frame} dicts; all runners wired so each event is priced
+        on its own asset. Alt-pool placebo p moved .089->.001 / .118->
+        .005 on legitimate per-asset math."
+    - id: A14
+      severity: low
+      item: "run_phase_minus_1 printed checkmark glyphs that crash cp1252
+        consoles when stdout is piped — stdout now reconfigured utf-8."
+    - id: A15
+      severity: informational
+      item: "CoinMetrics community daily metrics are assumed same-day-
+        known; CM actually publishes ~T+1. The N-leg flag can lag ~1 day
+        vs the assumed decision instant. Revision probe (frozen vs
+        refreshed) showed 0/5609 flag flips, but publication lag is a
+        separate axis — flagged as a declared PIT caveat, not resolved."
+    - id: A16
+      severity: design
+      item: "run_forward_eval now carries a diagnostic battery: all 77
+        round event streams partitioned at 2026-09-24 boundary.
+        DIAGNOSTIC ONLY — a killed candidate reviving post-boundary is a
+        NEW hypothesis requiring fresh declaration, never a rescue.
+        Purpose: null battery (pipeline regression — dead streams should
+        stay dead) + era-shift detection."
+    - id: A17
+      severity: high
+      item: "Still-open candle persisted as final: refresh_candles merged
+        the in-flight HL bar (partial OHLC) and never re-fetched it —
+        next run resumes at last_t+1, freezing partial values. Same bug
+        in backfill_candles. Live audit found 17 stale bars across
+        files; buried ones up to 7% wrong on daily closes (DOGE 1d
+        0.0998 vs true 0.0927). Both writers now drop bars where
+        t+iv_ms>now; all 17 repaired against fresh API values."
+    - id: A18
+      severity: medium
+      item: "refresh_candles pagination burned all 8 pulls re-fetching
+        the open bar (API snaps startTime to bar boundary, returns the
+        same in-flight bar each pull) -> false 'gap beyond 8 pulls'
+        warnings + ~200 wasted requests -> HL 429 crash starved
+        DOGE/AVAX/LINK. Fixed with order-agnostic max(t) advance +
+        no-progress break; _post/_get now back off on HTTP 429."
+    - id: A19
+      severity: medium
+      item: "coverage_sentinel + validate_event_files crashed with
+        ModuleNotFoundError under direct tools/ invocation (sys.path[0]
+        = tools/, not repo root) — ROOT now inserted into sys.path.
+        First scheduled run (catch-up after reboot 08:10) died early
+        with 0x800710E0; manual catch-up run completed same day and
+        exposed A17-A19 — stage isolation contained all three."
+    - id: A20
+      severity: high
+      item: "Binance refresh had the identical open-bar poison:
+        klines/premiumIndexKlines persist the in-flight bar and
+        oi_hist/taker_ls persist the open hourly period — frozen at
+        partial values since next run resumes at last+1. Live audit:
+        21 stale bars across all 7 symbols (every file had yesterday's
+        open bar buried mid-file). Repaired against fresh API values;
+        writers now drop t+iv>now on both HL and Binance paths."
+    - id: A21
+      severity: medium
+      item: "morning_research robustness batch: per-source try/except in
+        all refresh loops (one bad file no longer starves the rest —
+        the 429 crash starved DOGE/AVAX/LINK when the stage died);
+        _open retries URLError/TimeoutError + HTTP 418 alongside 429;
+        refresh_aux_sources subprocesses get PYTHONIOENCODING=utf-8;
+        validate_event_files glob 'events_*' missed reports/events/
+        (round-2 dir) — now 'events*' covers all 91 files;
+        run_phase_minus_1.py added to daily chain + report.md to
+        collect_verdicts (its events/ streams were frozen — the battery
+        cannot accrue what never regenerates); scheduled task settings
+        hardened: StartWhenAvailable, RestartCount=2@10min, battery
+        gates disabled."
+  conventions_noted:
+    - "Stale-entry convention (rounds 3/6/8): entry = close of the eval
+      bar ENDING AT/BEFORE the signal instant — for intraday funding-
+      triggered candidates the eval window includes up to one bar of
+      pre-signal drift. Generous to momentum, punitive to fades. KILL
+      verdicts on fades are conservative; momentum survivals would need
+      a next-bar-entry sensitivity check (none survived)."
+    - "Event `t` on bar-internal signals (xvenue_leadlag, us_session_
+      momentum, xasset_btc_leads_alts) records the bucket START while the
+      signal completes at bucket end — eval windows are correctly
+      post-signal; only the t label understates decision instant by one
+      bar. boundary_invariance still truncates correctly."
+    - "funding_carry_24h collects prints i+1..i+24 while the hold window
+      can start up to 4h earlier — ±3 prints (~bp) misalignment, declared
+      approximation."
+  post_fix_state: "rounds ext/3/6/7/8/9/10/11/12 + phase_minus_1 +
+    forward eval all re-run clean under the corrected harness; 91 event
+    files checked by the daily contract sweep: 0 violations. Flagship:
+    base/composite BTC RESEARCH_SUPPORTED (placebo .001/.021, n_eff=67
+    episodes), bnbtc WATCH, hlbtc UNDERPOWERED (n_eff=17), alts WATCH.
+    Live-day pass (A17-A21): open-bar poison repaired on HL+Binance
+    (38 stale bars healed), refresh loops isolated + retry-hardened,
+    scheduled task made restart/battery/catch-up safe."
+  investigated_not_bugs:
+    - "Binance OI/taker refresh covers BTC+SOL only — matches the declared
+      round6 leg universe (BTC/SOL). Not a bug unless legs widen."
+    - "coinbase_premium column corr 0.973 vs next-day return — real leak
+      in upstream column construction; verdict BLOCKED + quarantine is
+      correct, not a harness bug."
+  governance: "AGENTS.md added 2026-09-24 — Verification Doctrine:
+    tests are evidence, not deliverables; E2E-primary, verifier-verifying,
+    no tautological/change-detector tests, evidence artifacts for
+    important runs. Durable verifier: tools/verify_integrity.py —
+    5 behavioral invariants (event contract, open-bar hygiene, freshness
+    vs write-time completeness, forward completeness, coverage baseline);
+    fault-injection verified (contract violation + open bar both FAIL);
+    wired as final stage of the daily job — a FAIL prints its stdout
+    tail into the morning note."
+
+# ── Round 13 declaration — walk-forward selection replay (2026-09-24) ──
+# Declared BEFORE execution. Motivation: forward accrual is slow; this is
+# the strongest pseudo-OOS test available on existing data.
+round13_walkforward:
+  question: "would the flagship rule family have been DISCOVERABLE and
+    profitable if the clock stopped at C in {2017,2019,2021,2023}?"
+  design:
+    selection: "grid screen on data <= C only: trend rule a*(px>SMA_f) +
+      b*((px>SMA_s)&SMA_s rising k) with f in {20,30,45,60}, s in
+      {90,125,200}, k in {5,10}, a in {0.4,0.5,0.6} (b=1-a); dampers in
+      {none, N-leg, V-leg, N+V}. Score = strategy_stats Sharpe @10bp.
+      N-leg unavailable pre-C where CM flow coverage absent — honest:
+      a 2017 researcher had no CM data."
+    oos: "selected config applied to data > C -> end; report OOS Sharpe,
+      hit, net bp, MaxDD, and cost stress at 10/20/30bp RT"
+    clock: "harmony_extended px_bitstamp (2011->2026 full span); stress
+      via run_round10._stress (refreshed CM); mvrv via harmony_daily"
+  falsifies: "if selected configs do not transfer OOS across truncations,
+    the flagship's RESEARCH_SUPPORTED is selection luck, not mechanism.
+    If they transfer, forward accrual risk is materially reduced."
+  n_trials: "~288 configs x 4 cutoffs; DSR on OOS legs accounts for the
+    screen multiplicity"
+
+round13_results:
+  executed: 2026-09-24
+  finding: "SELECTION TRANSFERS — the flagship family re-derives and
+    works out-of-sample at every truncation. All 4 cutoffs selected
+    f=45, s in {125,200}, k in {5,10}, a in {0.5,0.6}, always with NV
+    dampers (288 eligible configs each). OOS Sharpe @10bp: 1.39 (2017),
+    1.32 (2019), 1.04 (2021), 1.51 (2023) — all beat same-window buyhold
+    (1.00/0.95/0.57/1.14). Holds at 3x cost: 1.26/1.18/0.87/1.34.
+    Actual flagship config beats each window's IS-selected config OOS
+    (1.62/1.59/1.33/1.58) — params sit on a broad plateau, not a spike.
+    Interpretation: mechanism is robust and re-discoverable, NOT
+    curve-fit. Residual unknown = forward regime novelty only (what
+    untouched data must still prove). Caveat: the rule FAMILY itself was
+    chosen via mega_screen on this history — replay tests param/
+    selection stability, not family novelty."
+  ledger_impact: "flagship_base_btc / flagship_composite_btc stay
+    RESEARCH_SUPPORTED with materially stronger evidence; QuantLab
+    remains LOCKED pending forward accrual (regime novelty gate)."
+
+round14_batch:
+  declared: 2026-09-28
+  question: "the episode-gate autopsy of the 11 WATCH candidates showed
+    three near-misses with a shared signature — all skill concentrated
+    on the SHORT side (oi_price_divergence +224bp S vs -8bp L, ep_wilson
+    0.426 as sole failing gate; equity_lead_btc_5d +250bp S vs -30bp L,
+    ep_wilson 0.426, t_skill 1.59) and one real-but-small carry edge
+    (funding_carry_24h ep-gate PASS + t_skill 2.40, DSR .631 fails the
+    78-trial bar at Sharpe 0.22). R14 asks whether the asymmetric cores
+    survive when the diluting legs are removed."
+  trial_accounting: "effective_families 50 -> 51 (RISK-OFF composite is
+    a new family; the two short-legs and carry-extreme are billed to
+    existing families as derived variants); total_signal_evaluations
+    74 -> 78 — derivation from autopsy evidence is exactly what the
+    ledger counts."
+  candidates:
+    - id: oi_price_divergence_short
+      family: OI-DIVERGENCE (derived)
+      mechanism: "parent's short leg only: OI-collapse + price-rise is
+        deleveraging-after-runup, not squeeze fuel — the long leg
+        (OI-surge+price-drop) showed -8bp skill and is dropped."
+      spec: "harmony_daily; oi_binance shift(2) publish-lag; oi_chg <=
+        rolling-252d p10 AND btc 5d ret > 0 -> SHORT +5d; cooldown 5"
+      falsification: "ep_wilson < 0.50, net <= 0, or t_skill <= 1.645"
+    - id: equity_lead_btc_5d_short
+      family: EQUITY-LEAD (derived)
+      mechanism: "parent's short leg only: nasdaq-down >=p90 marks
+        risk-off that pays short BTC; nasdaq-up long leg carried -30bp."
+      spec: "harmony_daily; fred_nasdaq ffill<=4 + shift(1) publish-lag;
+        ret5 <= -rolling-252d p90(|ret5|) -> SHORT +5d; cooldown 5"
+      falsification: "ep_wilson < 0.50, net <= 0, or t_skill <= 1.645"
+    - id: riskoff_cluster_5d
+      family: RISK-OFF (new)
+      mechanism: "union of the two short triggers — if both mechanisms
+        mark the same latent risk-off state, the cluster should hold or
+        improve per-episode skill with more coverage; if they are
+        independent shocks, the merger halves n_eff honestly."
+      spec: "harmony_daily; fires -1 when EITHER short trigger active;
+        missing leg contributes no fires; +5d; cooldown 5"
+      falsification: "ep_wilson < 0.50, net <= 0, t_skill <= 1.645, or
+        n_eff collapse to ~one parent's count (shared shock)"
+    - id: funding_carry_extreme
+      family: CARRY (derived)
+      mechanism: "the carry edge is real but thin (Sharpe .22): if it
+        concentrates in the outer tail of the funding distribution,
+        restricting to p95/p05 should lift per-episode Sharpe enough to
+        survive trial-deflated DSR."
+      spec: "identical to funding_carry_24h with q=0.05 (rolling p95/p05
+        on 1y of hourly prints); per-asset legs, pooled"
+      falsification: "ep_wilson < 0.50, net <= 0, t_skill <= 1.645, or
+        DSR < 0.95 at higher Sharpe (frequency cost too high)"
+  autopsy_closures: "sth_sopr_loss_bounce_3d (t_skill 0.21, placebo .423
+    — beta), breadth_thrust_1d (100% long, t=0.17 — pure beta), and the
+    vol-complex four (dvol/skew/iv_term/cme_oi all fail ep-gate +
+    placebo + skill) are follow-up CLOSED — no mechanism left to
+    salvage; parents stay WATCH under observation but no derived
+    variants are declared."
+round14_results:
+  executed: 2026-09-28
+  findings:
+    equity_lead_btc_5d_short: "WATCH — 121 eps, net +10960bp, t_skill
+      +3.04 (+276bp/ev, strongest skill in the book) BUT ep_wilson
+      0.432 FAIL (52.1% episode win rate) and placebo_p 0.770 —
+      magnitude-driven payoff, not a hit-rate edge, and time-shifted
+      shorts pay similarly (era-level short exposure, not timing)."
+    riskoff_cluster_5d: "WATCH — 149 eps (union adds ~28 unique OI-leg
+      events over equity's 121), t_skill +3.09, but net +8238 <
+      equity_lead's +10960: the cluster DILUTES, does not compound;
+      ep_wilson 0.437, placebo 0.870."
+    oi_price_divergence_short: "WATCH — only 40 eps resolve; ep_wilson
+      0.446, skill +102bp t=0.97. Too thin to say anything."
+    funding_carry_extreme: "KILL — the cleanest death available:
+      concentrating to p95/p05 funding flips net to -22725bp (Sharpe
+      -0.55). The parent's carry edge lives in the MODERATE band; the
+      extreme tail is adverse selection — extreme prints mark squeezes
+      that keep running against the collector. Hypothesis falsified."
+  interpretation: "the asymmetric short edges carry genuine
+    drift-adjusted skill (t~3.0) but are magnitude payoffs the
+    episode hit-rate gate honestly cannot pass in-sample; both are
+    eligible as NEW forward declarations if wanted. No RESEARCH_
+    SUPPORTED; in-sample survivor count remains 0."
+
+round15_batch:
+  declared: 2026-09-28
+  question: "coverage audit — 39 of 70 harmony columns were never
+    consumed by any emitter; after dropping stalled/extinct inputs,
+    five economically distinct LIVE columns remain untested. This is
+    the residual hypothesis space, not re-mining."
+  trial_accounting: "+5 signal evaluations (78 -> 83); +2 effective
+    families (51 -> 53): MINING-ECON (hashrate) and RATES-SHOCK
+    (us10y) are new; dormancy bills to the killed cdd-spike family,
+    realized_pl_ratio to sopr-capitulation, sth_mvrv to mvrv."
+  hypotheses:
+    - id: dormancy_spike_short_7d
+      family: COIN-AGE (billed — sibling of R12 cdd-spike fade)
+      mechanism: "dormancy (avg coin-age destroyed per coin-day)
+        spike = old coins moving = distribution overhang. Sibling was
+        UNDERPOWERED-negative on cdd; dormancy is the live ratio
+        metric — the family's last testable member."
+      spec: "harmony_extended; dormancy(lag-1) >= trailing-365d-prior
+        p90 -> SHORT +7d; cooldown 7; non-degenerate p10<p90 window"
+      falsification: "ep_wilson < 0.50, net <= 0, t_skill <= 1.645,
+        or sibling-class outcome (beta/underpowered)"
+    - id: hashrate_drawdown_long_14d
+      family: MINING-ECON (new)
+      mechanism: "hash-ribbon mechanism — hashrate drawdowns mark
+        miner capitulation that historically coincides with
+        accumulation zones and recovery."
+      spec: "hashrate(lag-1) 30d pct_change <= trailing prior p10 ->
+        LONG +14d; cooldown 14"
+      falsification: "ep_wilson < 0.50, net <= 0, t_skill <= 1.645,
+        or placebo >= 0.10 (era-exposure not timing)"
+    - id: us10y_shock_short_5d
+      family: RATES-SHOCK (new)
+      mechanism: "10y yield 5d shock z >= +2 = liquidity tightening
+        impulse hitting risk assets; rates-side twin of the
+        equity-lead risk-off short (which carries t=3.04 skill)."
+      spec: "harmony_daily; us10y(lag-1) 5d diff z over trailing 252d
+        >= +2 -> SHORT +5d; cooldown 5"
+      falsification: "ep_wilson < 0.50, net <= 0, t_skill <= 1.645,
+        or placebo >= 0.10"
+    - id: realized_pl_ratio_capitulation_5d
+      family: SOPR-CAPITULATION (billed — sibling of
+        sth_sopr_loss_bounce_3d)
+      mechanism: "realized profit/loss ratio collapse = loss-taking
+        dominance = capitulation exhaustion -> bounce."
+      spec: "realized_pl_ratio(lag-1) <= trailing prior p10 -> LONG
+        +5d; cooldown 5"
+      falsification: "ep_wilson < 0.50, net <= 0, t_skill <= 1.645,
+        or sibling-class outcome (placebo-beta like sth_sopr)"
+    - id: sth_mvrv_capitulation_7d
+      family: MVRV (billed — sibling of mvrv/sth_sopr family)
+      mechanism: "short-term-holder MVRV deep underwater = weakest
+        hands flushed below cost basis -> reflexive bounce."
+      spec: "sth_mvrv(lag-1) <= trailing prior p10 -> LONG +7d;
+        cooldown 7; note sth_mvrv history starts ~2022 (n~1445)"
+      falsification: "ep_wilson < 0.50, net <= 0, t_skill <= 1.645,
+        underpowered, or placebo >= 0.10"
+
+round15_results:
+  executed: 2026-09-28
+  construction_repair: "us10y_shock emitted n=0 on first pass —
+    fred_us10y is a business-day series (32% NaN on daily spine) so a
+    raw diff(5) is 60% NaN and rolling z never materialized. Repaired
+    with a publish-lagged ffill (last-published yield carried forward,
+    PIT-safe: shift(1).ffill() == ffill().shift(1)) under the SAME
+    pre-registered spec — falsification criteria unchanged."
+  findings:
+    dormancy_spike_short_7d: "KILL — n=287, hit .408, net -87133bp,
+      Sharpe -2.91, bb_p=0.001, era-consistent: STRONGLY
+      ANTI-PREDICTIVE. Dormancy spikes precede upside (the fade pays
+      the distribution thesis exactly backwards). Inverse declared
+      forward as fwd_dormancy_spike_long (implied ~+81k bp)."
+    hashrate_drawdown_long_14d: "MODEL_RISK — n=163, hit .546, net
+      +37470, Sharpe 2.05 BUT drift-skill -141bp/ev (t=-1.26): the
+      Sharpe is a low-vol-timing artifact, not edge. Gate worked as
+      designed — high Sharpe without skill does not promote."
+    us10y_shock_short_5d: "KILL — n=77 after repair, net -7180bp,
+      Sharpe -0.53; +94bp/ev drift-skill (shorts beat short-drift)
+      but long drift overwhelms; no inverse premium worth declaring
+      (bb_p=0.172)."
+    realized_pl_ratio_capitulation_5d: "KILL — n=245, hit .510,
+      net +2969bp, Sharpe 0.14, drift-skill -106bp/ev t=-1.95:
+      capitulation-bounce on PL-ratio is noise (sibling to
+      sth_sopr_loss_bounce's placebo-beta outcome)."
+    sth_mvrv_capitulation_7d: "UNDERPOWERED — n=27 < 30 (history
+      starts 2022); +38bp/ev t=0.35; accrues too slowly to resolve
+      in-sample. Not forward-declared (weak premise)."
+  interpretation: "the residual unexplored column space is now
+    exhausted — every economically distinct live input has been
+    tested at least once. One new forward declaration (dormancy
+    inverse). In-sample RESEARCH_SUPPORTED remains 0 of 83."
+
+# ── Forward promotion gate — pre-declared 2026-09-24, BEFORE accrual ──
+# Frozen criteria so maturing leads get graded mechanically, not by vibes.
+forward_promotion_gate:
+  declared: 2026-09-24
+  amended: "2026-09-25 — gate semantics hardened in code (deep audit
+    A24-C1/C2); text below is the operative criteria, original frozen
+    text preserved in git-less ledger history below this block"
+  applies_to: "all fwd_* leads + any diagnostic-battery revival that earns
+    a fresh declaration"
+  PROMOTED: "post-cutoff n_eff >= 30 INDEPENDENT episodes (union-merged
+    holding windows; same-shock multi-asset events cluster to one
+    episode; uncovered rows excluded) AND wilson_lo >= 0.50 AND net
+    ret_bp > 0 @10bp AND drift_skill resolved (>=30 resolved events)
+    with mean_skill_bp > 0 AND t_skill > 1.645 AND zero contract
+    violations"
+  DEAD: "powered n with wilson_lo < 0.50 OR net <= 0"
+  ACCRUING: "anything else — no limbo promotions, no partial credit;
+    unresolved drift skill can never promote"
+  hardened_2026_09_25:
+    - "C1: per-asset episode counting switched pairwise->union merge;
+      a 40d window + 39 nested 0.5d events now counts 1 episode
+      (previously 39 -> false PROMOTED)"
+    - "C2: cross-asset dedupe by interval overlap + 60s jitter
+      tolerance; same-shock BTC/ETH events count once (previously 2x)"
+    - "uncovered rows (NaN ret_bp) excluded from power/wilson/net —
+      40 uncovered rows can no longer print DEAD on zero covered obs"
+    - "drift gate requires RESOLVED skill (n>=30, t>1.645, mean>0);
+      NaN skill = unresolved = cannot promote (was a coin-flip clause)"
+    - "mixed datetime units (us vs ns) normalized via _to_ns; all-NaT /
+      empty frames BLOCKED not crashed"
+  battery_revival_rule: "a dead candidate reviving post-2026-09-24 is a
+    NEW hypothesis: fresh declaration + fresh cutoff required; its
+    battery stats never count toward promotion"
+  promotion_unlocks: "QuantLab stays LOCKED until at least one lead
+    PROMOTED at adequate power — even then, promotion means 'fund the
+    Sentinely-style frozen spec + shadow', not platform build."
+
+round13_leads_replay:
+  executed: 2026-09-24
+  method: "per cutoff {2019,2021,2023,2025}: re-derive direction AND
+    percentile threshold on events fully realized <= C (straddlers
+    excluded both sides); evaluate events starting >= C. Direction is
+    re-derived, not assumed — the honest 'would we have found it' test."
+  transfers:
+    - "nrpl long: selected at all 4 cutoffs; OOS +27.4k/+10.6k/+4.9k/
+      +1.8k — direction re-derives; edge decaying across eras"
+    - "puell cont: all 4; OOS +25.4k/+13.9k/+4.6k/+1.0k"
+    - "reserve_risk cont: all 4; OOS +15.6k/+14.7k/+2.0k/+89 — weakest"
+    - "skew25_1m revert: both viable cutoffs (options history short);
+      OOS +2.3k/+217"
+    - "premium_basis converge: selected at 2023/2025 (mature IS); OOS
+      +3.9k/+1.4k. 2021 thin-IS picked runaway -> OOS -24k: thin-sample
+      selection is the failure mode, not the mechanism"
+  fails:
+    - "fng_fear: IS direction unstable across cutoffs; OOS whipsaw"
+    - "mom24h binance-BTC-4h: OOS negative at all 3 cutoffs —
+      negative evidence for the family on this surface (HL-pool
+      forward lead still accrues; replay caveat: different venue)"
+  reading: "on-chain continuation leads (nrpl/puell/reserve_risk) +
+    skew/premium (mature-selection) carry pseudo-forward support;
+    fng and mom24h are the shakiest leads in the book"
+
+verdict_overrides:
+  funding_flip_momentum: "**KILL** — A23: the +90k/RESEARCH_SUPPORTED
+    print was manufactured by up-to-3h pre-signal drift in leaked
+    entries; clean-entry eval is hit .500 net -137k. Momentum leg
+    remains declared separately as fwd_mom24h_cont."
+  funding_carry_24h: "**WATCH** — A29 erratum: the round-9 ledger text
+    froze KILL under the v1 8h-cadence bug; post-A23 hourly-print
+    recompute on 3400 covered days shows hit .529, Wilson-lo .512 PASS,
+    net +13.8k bp, Sharpe .25, DSR .103, placebo p=.051, eras 2025-26
+    positive. Drift resolves +13.7bp/ev skill (t=1.93) — carry income,
+    not beta capture. Live WATCH; no forward lead declared yet."
+  cal_weekend_drift: "**MODEL_RISK** — A29 erratum: ledger text froze
+    RESEARCH_SUPPORTED on pre-placebo-fix stats; placebo p=.615 after
+    the A2 fix and era-split shows the early-window edge ~= the 10bp
+    fee line post-2022. Demotion recorded; not a survivor."
+  sth_sopr_loss_bounce_3d: "**WATCH** — A29b: round-12 text froze KILL
+    at n=60 on the dead base lineage; the *_alfabitcoin live lineage
+    (same metric, values bit-identical over overlap) extends coverage
+    to n=235 — hit .574, Wilson-lo .511 PASS, net +16329bp, Sharpe .64.
+    Weaknesses recorded: placebo p=.423 (indistinct from shuffled
+    timing), drift skill +10.9bp/ev at t=0.21 (unresolved). NOT
+    promoted — WATCH accrues only; no forward lead declared while the
+    mechanism lacks placebo separation."
+
+deep_audit_2:
+  date: 2026-09-24
+  id: A22
+  severity: high
+  finding: "forward book was half-starved and silent about it. The
+    harmony warehouse export (Sentinely parquet, upstream-owned) ends
+    2026-09-19/20 — before the 09-23/24 cutoffs — so ALL six
+    harmony/macro-fed leads (fng_fear, momentum_extremes, nrpl, puell,
+    skew, reserve_risk) could never emit a post-cutoff event. Two are
+    permanently dead: skew25_1m input died 2026-02-19 (whole coc_*
+    provider family same day — OI/IV/RV/liveliness/funding_coc too),
+    reserve_risk died 2025-12-28 (bgeo_archive key). The other four
+    are lag-bound, auto-recovering when the parquet refreshes. Battery
+    streams also void: cme_oi_confirm, iv_term_inversion, xvenue
+    funding_spread (funding_binance_um died 2026-08-31), skew stream."
+  secondary: "reserve_risk's in-sample window silently ended 2025-12-28
+    (9mo pre-declaration); same-era caveat applies to all coc_*
+    candidates (effective windows end 2026-02-19)."
+  fixes:
+    - "run_forward_eval: per-lead input-freshness probes -> INPUT_DEAD
+      verdict (auto-recovers on refresh; nothing lost)"
+    - "verify_integrity: column-stall WARN (>45d, upstream-owned) +
+      FAIL on declared-lead inputs that never reach cutoff"
+    - "collect_verdicts applies manifest verdict_overrides —
+      funding_flip_momentum now displays the confounded verdict"
+    - "file-fed leads unaffected: all 8 candle/funding/BN-premium
+      leads verified fresh and accruing"
+  user_action: "skew + reserve_risk revival needs upstream work in
+    Sentinely (coc_* family, bgeo_archive key) or alternate sources —
+    data-acquisition decision, not SPIKE-side"
+
+deep_audit_3:
+  date: 2026-09-24
+  id: A23
+  severity: critical
+  class: look-ahead / entry-timing
+  finding: "candidates_round6._entry_close floored the signal ts to the
+    bar grid then took the PRIOR bar's close — for non-bar-aligned
+    signals (hourly funding prints on the 4h grid) the entry price
+    predated the signal by up to 3h. Contract checks can't see it
+    (t_eval > t holds; the leak lives inside ret_bp). Also:
+    xvenue_funding_disloc slipped entry one bar forward on jittered
+    Binance fundingTime (+4ms) — stale not leak, same class."
+  blast_radius:
+    - "hl_premium_disloc: fade .442->.388 clean (leak penalized the
+      fade) => fwd_premium_cont premise STRENGTHENED (~.61 implied)"
+    - "funding_run_persistence: cont .413->.502 clean =>
+      fwd_funding_streak_fade premise VOIDED (fade ~.498, coin flip)"
+    - "funding_flip_momentum: .522/+90234bp/RESEARCH_SUPPORTED ->
+      .500/-137230bp/KILL — the leak fabricated the entire edge"
+    - "funding_xasset_rv, oi_price_divergence, funding_carry_24h:
+      recomputed, verdicts unchanged (KILL/KILL/KILL)"
+    - "mom24h decomposition numbers (.614/.426) were computed on
+      leaked entries; the fwd lead's own event stream is bar-aligned
+      and clean — verdict defers to post-cutoff accrual + round13
+      replay (already negative)"
+  fixes:
+    - "_entry_close: first bar whose close is at/after ts (sub-second
+      floored) — verified causal at every print hour"
+    - "xvenue_funding_disloc: epoch floored to bar grid"
+    - "rounds 3/6/8/9 + forward eval regenerated; contract sweep
+      91 files NONE"
+  lesson: "the audit classes keep paying off — a RESEARCH_SUPPORTED
+    verdict turned out to be a timing artifact. Entry-price causality
+    is now part of the fixed invariant set."
+
+five_audit_sweep:
+  date: 2026-09-24
+  id: A24
+  severity: critical
+  finding: "five parallel read-only audits found that the A23 fix itself
+    introduced a symmetric defect: _entry_close returned ei=0 for signals
+    predating bar coverage, pinning ~15.9k phantom 'covered' events onto
+    the first bars of each file (taker_share_fade_1h was ~70% pinned —
+    thousands of distinct signals replaying one window). Plus: placebo
+    nulls in rounds 11/12 hardcoded 1d horizons for 3d/7d candidates;
+    the frozen forward gate existed in text only (raw n>=30, no n_eff/
+    drift/contract enforcement); MinTRL consumed ANNUALIZED Sharpe +
+    excess kurtosis (answers understated ~hundreds of days); same_day
+    n_eff rule swept discrete intraday candidates into the continuous-
+    frame branch (one phantom episode); exit prices unguarded at 8 emit
+    sites (zero/NaN exits -> -10000bp or fabricated gains); position_
+    events fillna(0) turned missing-price days into flat invested days;
+    buyhold benchmark ran on unclipped 2010-era zero prices -> inf/nan;
+    merge_asof had no tolerance (stale funding prints propagate forever);
+    settle1 emitted LONG on NaN rate (NaN < thr -> else-branch);
+    funding_carry silently zero-filled missing tail prints; round13 IS
+    screen included the boundary bar and reported no DSR; boundary_
+    invariance truncated only the primary frame — aux frames (funding,
+    eval bars, medians, breadth) stayed full-length inside leg lambdas,
+    a false-PASS channel; backfills could truncate or overwrite accrued
+    history (30d-window feeds replaced files; coinmetrics wrote [] after
+    a failed pull)."
+  blast_radius:
+    - "all event streams touching _entry_close regenerated: pre-coverage
+      and gap signals now emit honest uncovered rows — e.g.
+      taker_share_fade_1h 12276 events = 3744 covered + 8532 uncovered,
+      max window 2h (was months)"
+    - "hl_premium_disloc fully clean: hit .495 net -135.6k KILL —
+      fwd_premium_cont premise is weaker than the A23-contaminated
+      estimate implied (~coin flip, not ~.61)"
+    - "xvenue_funding_disloc now FAILS boundary-invariance once aux
+      frames truncate honestly -> BLOCKED; fwd_xvenue_disloc_cont
+      premise suspect (was WATCH/net +3k on 364 events)"
+    - "flagship_composite_btc: n_eff=67 episodes, MinTRL=711d (was ~2d
+      pre-units-fix), buyhold benchmark finite (SR 1.22, was inf/nan);
+      RESEARCH_SUPPORTED survives all fixes"
+    - "round13: strict <C IS bound; DSR reported per cutoff
+      (1.000/1.000/0.995/0.999) — selection still transfers"
+    - "forward gate live: n_eff>=30 episodes AND wilson_lo>=0.5 AND
+      net>0 AND drift>0 AND clean contract -> PROMOTED; violations ->
+      BLOCKED; underpowered -> ACCRUING (no more PROMISING-on-raw-n)"
+  fixes:
+    - "_entry_close: bt[ei]<=ts bound — verified on synthetic
+      pre-coverage/mid-gap/in-coverage/post-tail cases"
+    - "placebo horizon derived per candidate from median t_eval-t"
+    - "_stats: F.power_gate n_eff + wilson + net + drift_skill +
+      validate_events; per-lead drift price frames"
+    - "INPUT_DEAD probes extended: flagship mvrv leg, eval-side inputs,
+      per-lead asset scoping (9/14 currently dead, 5 accruing)"
+    - "MinTRL: per-observation Sharpe + non-excess kurtosis + daily
+      target; same_day now h<=0.02 (only true continuous frames)"
+    - "exit-price finite+positive guards: _fwd_ret, _emit, _sig_events,
+      _daily_rows, basis1, round7 dma, round8 x3, round9 panel,
+      mom24h_forward, settle1"
+    - "position_events/strategy_stats: px>0 mask, no fillna(0) on ret;
+      buyhold clipped at CLOCK_START"
+    - "merge_asof tolerance=8h (funding cadence) at round6/round8 joins;
+      settle1 finite-rate guard; funding_carry requires full 24 prints
+      within 26h wall-clock"
+    - "boundary_invariance: F.truncate_aux clips aux frames to slice
+      horizon in every multi-frame leg across rounds 3/6/8/9 +
+      phase_minus_1 + extended_eval"
+    - "backfill_binance: max(t) resume, 30d feeds merge onto history,
+      _write_safe refuses shrink/empty/regressing-tail writes;
+      backfill_coinmetrics: refuses empty/shrunk/regressing payloads,
+      warns on vanished metric columns"
+    - "verify_integrity: pinned-window check (h > 4x median OR per-asset
+      duplicate covered t_eval), uncovered-with-finite-ret check,
+      report-freshness vs events mtime, future-t_eval check"
+    - "morning verdicts: dedup by candidate (later report wins) +
+      source attribution"
+  verification: "fault-injection verified (_entry_close 4-case probe,
+    zero-exit -> uncovered, NaN-day -> uncovered); verifier verified
+    against real data (fra_* variable windows are SL/TP-legit, not pins);
+    full chain rerun: 13 evals ok, 91 files contract-clean, only
+    remaining FAIL = real upstream staleness"
+  status: "reports regenerated post-fix; forward book honest —
+    5 accruing (xvenue_disloc n=8, alt_reversal n=12, premium_cont n=3,
+    streak n=0, mom24h n=0), 9 INPUT_DEAD pending upstream refresh"
+
+# ── A25: premise-health tagging + verifier fault-injection (2026-09-24) ──
+deep_audit_5:
+  date: 2026-09-24
+  scope: "forward book premise labelling + fault-inject the new verifier
+    checks (doctrine: verify the verifier)"
+  premise_tagging:
+    - "LEAD_PREMISE map in run_forward_eval.py — every lead now prints a
+      `premise:` line beside its accrual stats, so ACCRUING on a dead
+      premise is a visible contradiction, not a false-green"
+    - "labels: VOID (fwd_funding_streak_fade — clean .498), NEGATIVE
+      (fwd_mom24h_cont — replay OOS-negative at all 3 cutoffs), SUSPECT
+      (fwd_xvenue_disloc_cont — in-sample BLOCKED on boundary-invariance),
+      WEAK (fwd_premium_cont — .495 clean, not .61), INTACT/STRONG/
+      MIXED/DECAYING for the rest — each cites its evidence basis"
+  fault_injection:
+    - "pinned-window fault (30 covered rows sharing one t_eval): verifier
+      FAILs 'event contracts — 30 covered rows share t_eval per asset'"
+    - "uncovered-with-finite-ret fault: FAILs '1 uncovered rows with
+      finite ret_bp'"
+    - "future t_eval covered row: FAILs 'forward completeness — covered
+      rows with future t_eval' + report-freshness"
+    - "post-cleanup state: all PASS except the intentional FAIL forward
+      input freshness (real upstream staleness — not a code defect)"
+  status: "forward book now reports premise AND accrual separately;
+    verifier checks proven live by injection; only remaining FAIL is the
+    upstream Sentinely parquet staleness (mtime 2026-09-20, missing
+    mvrv/nrpl/puell/fng/skew/reserve_risk) — cannot be fixed SPIKE-side"
+
+# ── A26: upstream harvest recovery + macro_daily producer gap (2026-09-24) ──
+deep_audit_6:
+  date: 2026-09-24
+  scope: "unblock INPUT_DEAD leads at the source; found and closed a
+    missing-exporter gap in the SPIKE chain"
+  upstream_repair:
+    - "Sentinely harvest failed 2026-09-20: BGeometrics switched report
+      embeds Plotly.newPlot -> var-literal JS; 125 BLOCKING_UNCLASSIFIED
+      froze the warehouse at Sep-20"
+    - "same-day repair (upstream b0e6355, var-assignment fallback) was
+      never validated live — manual harvest run today: LOCAL GREEN,
+      parquet now through 2026-09-24"
+    - "revived: mvrv_raw 09-23, nrpl_usd 09-23, puell 09-23, fng 09-24"
+    - "confirmed permanently dead upstream: skew25_1m (coc_* died
+      2026-02-19), reserve_risk (archive JSON still commits daily but
+      content frozen at 2025-12-28 — upstream stopped updating the
+      series itself, not a parse failure)"
+  missing_producer_bug:
+    - "macro_daily.csv had NO producer in the morning chain — built
+      ad-hoc once; fng/mvrv leads would have stayed INPUT_DEAD forever
+      even with a live warehouse"
+    - "created tools/export_macro_daily.py with explicit verified column
+      map (each mapping matched >=0.99 on overlap: btc_price<-
+      blockchain_api market-price, mvrv<-capmvrvcur, fng<-
+      alternative_fng, etf<-farside total, oi<-bgeo_archive_oi_binance,
+      funding_coc/sopr<-coc_* [dead], fred_* direct)"
+    - "legacy etf_flow_usd_m carried exactly 2x farside total (doubled
+      groupby-sum artifact) — corrected to x1; percentile signals
+      scale-invariant so no verdict changes"
+    - "wired into morning chain refresh_aux_sources"
+    - "fng mapping initially used bgeo mirror — coverage sentinel caught
+      the 31-row shrink; corrected to alternative_fng__value (verifier
+      working as designed)"
+  forward_book_now:
+    - "ACCRUING: fng, momentum_extremes, xvenue_disloc, premium_cont,
+      streak_fade, alt_reversal, mom24h (7)"
+    - "daily-bar lag (auto-resolve tomorrow): alt_resid, flagship_hlbtc,
+      nrpl, premium_basis, puell (5)"
+    - "permanently dead pending source decision: skew_reversal,
+      reserve_risk_cont (2)"
+  verification: "verifier green except intended forward-input FAIL;
+    coverage baseline 0 regressions; PIT seal 2026-09-24 committed in
+    upstream repo (a2a5e46), chain PASS 20 days"
+
+# ── A27: power-gate bypass fabricated a premature DEAD (2026-09-25) ──
+deep_audit_7:
+  scope: "fwd_alt_reversal showed DEAD on n=36/n_eff=36 over a 1d span —
+    investigate whether the verdict was statistically legitimate"
+  finding:
+    - "36 post-cutoff rows were 6 assets x 6 SHARED trigger timestamps —
+      6 distinct BTC shocks, not 36 independent economic episodes"
+    - "power_gate correctly refused (span=1d < 30d) but returned early
+      WITHOUT n_eff; _stats then defaulted n_eff=len(ev)=36 — the span
+      guard was silently bypassed and the verdict went powered -> DEAD"
+    - "latent inflation too: episodes were counted per-asset, so one
+      shared cross-asset trigger counted as N episodes"
+  fix:
+    - "harness/falsify.py: n_eff computed BEFORE all early returns and
+      always emitted; pooled frames now dedupe episode-start timestamps
+      across assets (one shock = one observation)"
+    - "run_forward_eval.py _stats: n_eff defaults to 0.0 on a refused
+      power check, never raw n; verdict also requires
+      power['sufficient'] — an underpowered stream can no longer die"
+  corrected_result:
+    - "fwd_alt_reversal: n=36, n_eff=6, hit=.417, wilson_lo=.271,
+      net=-1283bp, span=1d -> ACCRUING (honest: underpowered, not dead —
+      the evidence cannot yet falsify it under the declared gate)"
+    - "blast radius: pooled leads' n_eff now stricter — xvenue_disloc
+      8->3, premium_cont 5->4; no in-sample verdict flipped, flagship
+      still RESEARCH_SUPPORTED"
+  verifier:
+    - "new permanent check 'power gate invariants' in
+      tools/verify_integrity.py: synthetic frames exercise the REAL
+      power_gate + _stats verdict path — shared-trigger collapse (6x6
+      and 35x1), overlap chaining (40x10d -> 1 episode), tiled
+      independence + powered PROMOTED path, empty frame"
+    - "fault-injected BOTH original defects (n_eff omitted on early
+      return + _stats fallback/no-sufficient clause): check FAILed on
+      n_eff=None AND verdict=PROMOTED on a losing underpowered frame;
+      restored, PASS"
+    - "full chain regenerated; verifier green except intended
+      forward-input-freshness FAIL (3 daily-lag + 2 dead upstream)"
+  doctrine_note: "ACCRUING is not a reprieve — alt_reversal's premise is
+    intact but its forward evidence is 6 episodes over 1 day. It must
+    reach n_eff>=30 AND span>=30d before the gate resolves it."
+  review_followup_2026_09_25:
+    - "same_day branch now applies the cross-asset shared-timestamp
+      dedupe too (was per-asset only — the same A27 inflation for pooled
+      continuous-position frames). Blast radius: flagship_base_alts /
+      flagship_composite_alts n_eff 145 -> 98, still WATCH; zero verdict
+      flips across all 77 in-sample rows; forward book unchanged"
+    - "all-NaT frames: span guarded (was ValueError), n_eff=0"
+    - "gate moved to harness.falsify.forward_gate (runner + verifier share
+      it; verifier no longer imports a CLI module); every return carries
+      n_eff/drift; docstring states drift NaN is permitted"
+    - "verifier probes rebuilt with hand-derived counts: 6x6 shared shock
+      at 1h exits -> exactly 6 (old probe used 1d exits and actually
+      measured overlap-chaining, n_eff=1); 10x4 shared shock over 90d ->
+      10/ACCRUING (per-asset counting would PROMOTE); tiled winners
+      PROMOTED + tiled losers DEAD; same-day continuous run -> 1;
+      same-day pooled 2 runs x 5 assets -> 2; empty + all-NaT -> 0; each
+      probe isolated so a crash is a FAIL line"
+    - "fault-injected: (1) dedupe removed -> 6 FAIL lines incl. PROMOTED
+      on the 10x4 frame; (2) raw-n fallback + no sufficient clause ->
+      reproduces the original DEAD; (3) NaT guard removed -> FAIL on
+      raise. Restored byte-identical, PASS"
+
+# ── A28: forward-book retirements + per-lead input probing (2026-09-25) ──
+# Registry read by harness.candidates_forward.retired_leads(): the runner
+# reports these leads RETIRED (not INPUT_DEAD) while their input stays
+# extinct, and verify_integrity downgrades them FAIL -> visible WARN.
+# Declarations stay frozen and are re-evaluated every run; a revived input
+# is flagged for review. Every entry must carry a ledger reference.
+forward_retired:
+  - lead: fwd_skew_reversal
+    input: harmony_extended.skew25_1m
+    upstream: coc_btconchain_derivatives_options_25deltaskew_light__1_month
+    extinct_since: "2026-02-19"
+    retired_on: "2026-09-25"
+    ledger: A28
+    reason: "whole coc_* family stopped 2026-02-19; only live warehouse
+      skew series (bgeo_archive_options_volatility_skew__v1, n=106,
+      unspecified tenor/delta) is a different definition — substitution
+      forbidden"
+  - lead: fwd_reserve_risk_cont
+    input: harmony_extended.reserve_risk
+    upstream: bgeo_archive_reserve_risk__v1
+    extinct_since: "2025-12-28"
+    retired_on: "2026-09-25"
+    ledger: A28
+    reason: "archive JSON still commits but series content frozen at
+      2025-12-28; coc reserverisk also dead since 2026-02-19; the only
+      live series (bgeo barometer_percent reserve_risk) is a percent
+      transform — a different definition, usable only as a NEW
+      declaration, never as this lead's input"
+a28_followup_2026_09_25:
+  - "verifier input probing now uses CF.LEAD_CUTOFFS (single source with
+    the runner) — the shared 09-24 constant false-FAILed 09-23-declared
+    leads (momentum) and never probed flagship at all"
+  - "macro_daily.mvrv source switched: upstream parquet
+    coinmetrics_core (weekly-only refresh) -> SPIKE's own
+    backfill_coinmetrics pull of the SAME metric capmvrvcur (daily,
+    bit-identical overlap over all 5912 shared rows, deeper 2009 history
+    + fresher tail); parquet remains as loudly-reported fallback"
+  - "result: mvrv reached 09-24 same-day -> fwd_momentum_extremes +
+    fwd_flagship_hlbtc revived (flagship emitted its first post-cutoff
+    event); nrpl/puell remain INPUT_DEAD purely on the bgeo ~12:00Z
+    publish lag, caught by the new Sentinely-Harvest-Daily (12:55Z) ->
+    MorningResearch moved 07:00 -> 21:00 local so every input class is
+    at D-1 when the book evaluates"
+  - "retirement path fault-injected: live-lead retirement -> REVIVED
+    WARN; missing ledger ref -> FAIL; unknown lead -> FAIL"
+
+# ── Deep audit 8-agent sweep + repair (2026-09-25) ─────────────────────
+# Corrections to earlier entries; original text preserved per append-only
+# doctrine. Verdict changes recorded via verdict_overrides + reports.
+ledger_errata_2026_09_25:
+  id: A29
+  trigger: "8-agent deep audit (falsify-math, forward-PIT, verifier,
+    data-pipeline, in-sample, ledger, upstream-commits, ops)"
+  verdict_corrections:
+    - "funding_carry_24h: round9 ledger text froze KILL under v1 funding
+      cadence; post-A23 recompute prints WATCH (+14.9k net, Wilson .512
+      PASS). The override below carries the CURRENT computed verdict;
+      in-sample reports now re-execute daily so the drift journal
+      (reports/verdict_drift.md) is the append-only record of any
+      further moves. NOT in the forward book — a live WATCH with
+      positive net has no declared lead (gap recorded for the next
+      declaration round)."
+    - "cal_weekend_drift: ledger text froze RESEARCH_SUPPORTED;
+      post-placebo-fix report prints MODEL_RISK (p .615, era-dominated
+      early-window edge ~= fee line in 2024-26). Override carries the
+      demotion."
+    - "battery-void markers: streams that computed on dead inputs are
+      non-promotable descriptive results, not evidence — cme_oi_confirm,
+      iv_term_inversion, xvenue_funding_spread (funding_binance_um died
+      2026-08-31), skew stream (coc_* died 2026-02-19), reserve_risk
+      in-sample window silently ended 2025-12-28."
+  trial_accounting_clarification: "effective_families counts MECHANISM
+    families (50), not streams (~77 evaluated) or parameter configs
+    (~1152 in R13's own walk-forward screen). DSR deflates by N=50 —
+    conservative at family granularity, undercounting at config level.
+    Both numbers declared; readers must not quote 50 as 'trials'."
+  pipeline_corrections:
+    - "export_harmony_extended: nupl/sth_sopr/sopr_7sma switched to the
+      *_alfabitcoin live lineage (bit-identical to dead base columns,
+      still publishing to 09-24); btc_price dropped (dead 2023-12-13,
+      unconsumed, trap column); coinbase_premium + realized_price kept
+      all-NaN; upstream quarantine manifest now bound and enforced at
+      export (do_not_use/unit/date-range propagate automatically)"
+    - "publish-lag: round-11/12 daily metrics shifted +1d, round-4
+      macro/on-chain +2d (T+1 publication falls after the day-d entry
+      boundary); LAGGED_INPUTS registry + verifier truncation probes
+      prove no event survives a source truncation before publish time"
+    - "in-sample drift gate: verdict() now receives drift_skill in ALL
+      runners (phase-1, extended, R3-R10) — was wired into 2 of 11
+      rounds; beta-capture positives now demote uniformly"
+    - "R13 DSR unit fix: var_sharpe now annualized (removed /365 with
+      bars_per_year=365 — was double-dividing, printing ~1.000 DSRs
+      that were raw PSR)"
+    - "morning_research: atomic writes for all refreshes; verdict-drift
+      journal; exits nonzero on stage failure (was always 0, hiding
+      verify_integrity FAILs inside the scheduled task)"
+    - "backfills: open-bar filtering + tail-heal (binance, candles,
+      coinmetrics); safe atomic writes refusing empty/shrunk/backward
+      payloads; per-field merge preserves vanished API columns"
+    - "analyze_watch: WATCH universe auto-discovered from reports (was a
+      stale 13-name hardcode missing 5 live WATCHes)"
+  arbitration_open:
+    - "realized_price: SPIKE audit claims early-stamped 2026 tail;
+      upstream certifies it live (canonical primary). Verified
+      lag-0 vs capmvrvcur historically — SPIKE keeps the mask
+      (unconsumed) pending an owner decision; recorded in both ledgers"
+    - "coinbase_premium: masked as lookahead; live CryptoQuant-sourced
+      premium columns exist (open_daily_btc_coinbase_premium_*) but are
+      different-provider definitions — any use is a NEW declaration"
+
+a29b_followup:
+  - "drift_skill now attributes zero-width events as single-bar holds —
+    continuous-position frames (flagship variants emit one invested day
+    per row, t_eval==t) were permanently unresolved, which under the
+    hardened gate meant the flagship could never promote; resolves to
+    +8.5bp/ev skill on bnbtc (t=1.66), +6.2bp on HL (t=0.92). In-sample
+    verdicts unchanged (skill>0, not beta)."
+  - "write_event_csv: empty candidate emissions now persist the schema
+    header — a quarantined input producing zero events landed as a
+    zero-byte file (EmptyDataError) that contract sweeps could not read"
+  - "coverage baseline updated for the intentional btc_price drop"
+  - "fault injections verified the verifier discriminates: fabricated
+    PROMOTED -> reconciliation FAIL (n mismatch recomputed); injected
+    t_eval<t rows -> contract FAIL; both restore to PASS"
+  - "diagnostic battery, post 2026-09-24 boundary: us_session_drift
+    raw n=7 hit=1.000 net=+2224bp is ONE merged episode — 7 assets in
+    the same 12h window (2026-09-24 08:00->20:00Z) on a single up-day;
+    n_eff=1 under cross-asset clustering, standing verdict stays KILL
+    (n=5845, hit .480, -52671bp). funding_carry_24h post-boundary
+    n=3 net=-1095bp (underpowered; WATCH stands but post-cutoff
+    accrual is negative so far). Battery raw-n overstates clustered
+    events — interpret via n_eff, not raw count."
+
+a30_export_round2:
+  - "sopr_7sma: upstream manifest gained a derived-column defect —
+    the 2026-03-29 +25.6% sopr bad tick contaminates the stored 7d
+    trailing SMA for 2026-03-29..04-04; range mask added upstream and
+    bound at export (7 rows masked; verified all-NaN in window,
+    04-05 resumes ~0.999). No SPIKE consumer; disarms a trap."
+  - "nrpl_usd: warehouse restated 2025-08-29..10-18 (51d) post-export;
+    re-exported, now bit-exact vs source. Consumers re-run: round11,
+    round12, round13, forward eval — sth_sopr_loss_bounce_3d flipped
+    KILL->WATCH on the revived alfabitcoin lineage (override recorded)."
+  - "macro_daily btc_price: 229 non-positive provider placeholder
+    zeros (2010-01-01..08-16 pre-market) now masked at export —
+    a 0 close poisons return math. Coverage baseline regenerated;
+    first valid price 2010-08-18."
+
+a31_adversarial_audit2:
+  - "Second 8-agent adversarial pass over the A26-A30 fixes themselves;
+    new defects found in the NEW merge/drift/contract code and closed
+    below. All are pre-registration corrections to the harness, not to
+    declared hypotheses."
+  - "episode merge (falsify._episode_intervals/_count_episodes): now
+    ASYMMETRIC at boundaries — a windowed interval starting exactly
+    where a window ended is disjoint exposure (tiled 40x10d -> n_eff=40,
+    not 1); any zero-width point touching a boundary is the same instant
+    -> merges (same-shock dedupe). Global median-gap cadence replaced by
+    local neighbor-gap test with 2d absolute cap: mixed-cadence frames
+    (47 hourly + 40 daily rows) minted 41 fake episodes before, now 2;
+    uniformly-spaced points 10y apart no longer collapse to 1."
+  - "contract hardening (validate_events): 'hit' required; t/t_eval
+    errors=coerce + NaT reject; ret_bp/gross_bp numeric + FINITE
+    (inf ret_bp previously produced Sharpe=inf -> false PROMOTED);
+    NaN assets are violations (were silently dropped, undercounting
+    episodes); malformed frames -> BLOCKED, never crash."
+  - "drift_skill: EPISODE-level aggregation replacing raw-row t-stats
+    (serially-correlated member rows rejected the zero-skill null far
+    above nominal — rho~0.5 -> ~18% false reject at 1.645). Episode ids
+    remap through the same global union merge as _count_episodes so the
+    drift unit matches the power unit. sd==0 -> sign-test fallback
+    (all-positive => +inf promote-eligible, all-negative => -inf dead,
+    zero => NaN unresolved) — constant residuals are decisive direction,
+    not 0/0. ddof=1. Off-grid timestamps horizon-guarded."
+  - "publish-lag in-sample leaks repaired (the 14 declared forward leads
+    were already clean under perturbation — these were IN-SAMPLE /
+    diagnostic paths): candidates_round6.equity_lead_btc_5d fred_nasdaq
+    shift(1) (~21h FRED print lag vs 00:00Z entry);
+    candidates_round8.vix_spike_btc_long fred_vix shift(1);
+    candidates_round10 w_composite + flagship_composite mvrv/stress
+    shift(1) — w executes t+1 but day-(i-1)-stamped dampers finalize
+    ~03:20Z day i, ~3.3h/day leak into the IN-SAMPLE composite;
+    run_round10 diagnostics block same; run_round13 damp() + eligible()
+    (boundary moved to C-1) + fng replay shift(1)."
+  - "VERDICT CHANGE (real): after episode-level drift + damper lag the
+    in-sample flagship composite streams flip RESEARCH_SUPPORTED/WATCH
+    -> KILL. flagship_composite_bnbtc: 1663 position-day rows merge to
+    n=36 episodes, mean_skill=-52.9bp/ev vs unconditional BTC drift,
+    t=-3.10 — the composite's +36329bp net is beta capture, not timing.
+    flagship_base_btc (no dampers — pure price rules) also flips to
+    KILL under the same episode gate: +123694bp net but the skill test
+    is now honest. RESEARCH_SUPPORTED is vacated in-sample; only the
+    declared forward twin (fwd_flagship_hlbtc, correctly lagged from
+    the start) continues accrual."
+  - "DSR prior measured: var_sharpe hardcoded 0.25 -> 1.372
+    (EMPIRICAL_VAR_SHARPE, MAD-robust dispersion over 77 evaluated
+    candidates; raw var 9.65 was degenerate-tail inflated). The 0.25
+    prior understated cross-trial variance ~5.5x — printed DSRs were
+    anti-conservative. All rounds regenerated under the new prior."
+  - "emitters: run_phase_minus_1 routes all writes through
+    write_event_csv (all-empty pools previously landed as zero-byte
+    unparseable files); mrv_rsi_reversion_1h guards len<16 (IndexError
+    on empty frame); tsmom_daily_14d guards non-finite prices
+    (all-NaN input previously emitted phantom uncovered rows)."
+  - "verifier upgrades (red-team blind spots closed): in-sample
+    report<->file reconciliation (parse each report's candidate table,
+    recompute covered n/hit/net per event file — file swaps, deletions,
+    truncations, injected values now FAIL); missing-file reads degrade
+    to FAIL lines not crashes; bidirectional manifest<->artifact set
+    check (undeclared files AND declared-but-absent both FAIL; fixture_*
+    statuses exempted); publish-lag probe upgraded from tail-mask-only
+    (vacuous when no event samples the tail) to VALUE PERTURBATION at
+    the last covered event's lag window — a shift-0 twin now provably
+    FAILs (verified live: corrupted fng shift caught, restored -> PASS);
+    artifact anchoring: reports/artifact_hashes.json sha256 snapshot
+    written at end of a passing run — post-verification edits, swaps,
+    and deletions FAIL until a clean run re-anchors."
+  - "episode-level hit stats close the last row-level shortcut: the
+    verdict gate now reads F.episode_hit_stats (per-episode net>0 wins,
+    Wilson on n_ep through the same global merge) instead of the
+    row-level wilson gate for RESEARCH_SUPPORTED/KILL paths. Printed
+    report tables keep row-level n/hit/wilson as descriptives; clustered
+    streams can no longer inflate hit-rate evidence into a PASS."
+  - "forward_gate closed the same row-level hole the in-sample verdict
+    path had: PROMOTED now requires EPISODE-level wilson_lo >= 0.5 via
+    episode_hit_stats (previously row-level wilson_gate — clustered
+    post-cutoff rows could inflate hit evidence into a production
+    promotion). Early-return on len<2 also removed so single-row frames
+    report their real n_eff/net instead of zeros (fwd_flagship_hlbtc
+    post-cutoff now shows n_eff=1 net=+2bp rather than 0/+0)."
+a32_adversarial_audit3:
+  - "Third 8-agent adversarial pass; defects found and fixed across the
+    newest stats layer, emitters, verifier, ops chain, and data layer.
+    All pre-registration harness corrections."
+  - "episode_hit_stats Wilson bug (HIGH): half-width multiplied by
+    z^2=3.8415 instead of z=1.96 (intervals ~1.96x too wide — 30/40 wins
+    printed wilson_lo 0.473 vs true 0.598; a live 75%-hit edge would die
+    at the 0.5 gate). Fixed; verified vs independent reference over 400
+    random frames. funding_carry_24h ep-gate moved 0.431->0.511."
+  - "_episode_intervals: point-run branch could shrink an open window's
+    end (overcounted n_eff, split episode nets); equal-timestamp rows
+    were input-order dependent — now lexsort puts windows before points
+    at ties and point runs cannot truncate a containing window
+    (verified: order A == order B; interior point-runs don't split)."
+  - "timestamp robustness: mixed naive/aware and malformed t values now
+    coerce to NaT and drop from evaluable rows instead of crashing
+    (power_gate/events_to_daily_returns verified no-crash on garbage)."
+  - "emitter fail-open class closed across candidates.py, round3, round6,
+    round8, round9, round11: NaN/inf signals and degenerate thresholds
+    (thr<=0 flat-window, hi<=lo degenerate quantiles) previously minted
+    covered phantom rows — e.g. serialcorr_15m_bounce emitted a LONG
+    with sig_ret_bp=NaN but a realized ret_bp, appearing as valid
+    evidence. All sites now finite-guarded; rsi2 neutralizes inf deltas;
+    funding_carry_24h requires hi>lo."
+  - "publish-lag: run_round13._ev replay read lagged-input values
+    UNSHIFTED (only thresholds lagged) — premise evidence contaminated;
+    values now shift(1) like the impls' _pcol (verified live: spike
+    stamped day T produces event at T+1). fwd_skew_reversal added to
+    LAGGED_INPUTS + verifier emit_for — the last undeclared lagged
+    reader (skew25_1m, extinct upstream, RETIRED)."
+  - "uncovered-row stamp convention: 4 emitters in candidates.py clamped
+    t_eval to the last bar on unevaluated tail rows, fabricating a
+    holding window — now t_eval==t + exit_reason='uncovered' like every
+    other emitter. leak_tsmom fixture left intact."
+  - "data layer: exchange_balance_drift_7d consumed the fingerprinted
+    2011-2013 placeholder segment of exchange_balance_total (frozen
+    wrong-scale values -> fabricated early events) — strict inequalities
+    + lo<hi guard now refuse signals on dead series (281 events vs
+    fabricated early history). shadow_journal annotation corrected."
+  - "verifier upgrades (red-team CRITICAL + HIGH closed): missing or
+    EMPTY artifact_hashes.json is now an anchoring FAIL (previously
+    WARN-only — deleting the snapshot silently re-seeded a tampered
+    corpus as baseline); hash boundary widened to manifest.yaml +
+    harness/*.py + run_*.py + tools/*.py (143 artifacts); in-sample
+    verdict cells now reconciled — RESEARCH_SUPPORTED/WATCH/
+    UNDERPOWERED/MODEL_RISK must satisfy recomputed necessary
+    conditions (episode gate, power, net>0, Sharpe>1) or FAIL
+    (fault-injected live: KILL->RS and KILL->WATCH both caught);
+    non-numeric n/hit/net cells FAIL instead of silently skipping;
+    publish-lag NaN-mask now compares only events at t <= earliest
+    masked stamp (extinct inputs legitimately feed later quantile
+    windows — the whole-stream compare was a false-positive class);
+    coverage sentinel adds per-column value signatures (prefix-hash over
+    baseline-dated values catches in-place history rewrites invisible to
+    n/first/last) + coinmetrics added to the back-move check; stale
+    refreshed inputs (funding/klines/premium/15m-4h-1d candles) now WARN
+    past 48h — feed death was invisible to verdicts; power-gate probes
+    extended (touching-window boundary, shuffled input, equal-t order)."
+  - "morning_research: coverage alerts journaled append-only to
+    reports/coverage_journal.md (collapse stays durable evidence after
+    baseline self-heal); collect_verdicts warns when manifest overrides
+    are unreadable; pre_verdicts/collect_verdicts wrapped so a parse
+    crash cannot kill the whole note; eval warn-scan now surfaces WARN
+    lines from ok scripts; analyze_watch applies verdict_overrides and
+    scans report_round13.md."
+  - "multiple-testing recount: total_signal_evaluations 69 -> 74
+    distinct ids (77 report rows incl. 3 extended retests)."
+  - "regenerated: full 13-runner chain + forward eval; verifier ALL
+    PASS (13 checks, 143 anchored artifacts); fault-injection suite
+    confirmed discrimination (empty snapshot, verdict tamper, file swap,
+    manifest edit, shift-0 lag twin all caught)."
+a33_data_provenance_residuals:
+  - "Residual data-layer audit closure — every remaining finding either
+    masked, verified-correct-by-design, or hardened. Raw CSVs untouched
+    (quarantine at the consumption layer, evidence preserved)."
+  - "harmony_extended() loader masks (A32 audit follow-through):
+    exchange_balance_total placeholder era — exact float64 values
+    repeating on >2 distinct days are fill artifacts, never physical
+    balances (zeros through 2011-06, fingerprint repeats to 2012-08-13;
+    masked 632 rows, drift_7d earliest event moved 2011-08-28 ->
+    2012-07-31); oi_futures_hyperliquid pre-2023 — venue did not exist
+    before ~late 2023, all 1031 pre-2023 nonzero values fabricated
+    upstream; oi_futures_cme leading zero-run (98 placeholder rows,
+    siblings printed real OI the same days). Masks propagate via _pcol/
+    isfinite guards already in the emitters."
+  - "verified-correct, no change: trailing harmony rows are the
+    publish-lag taper (4->13->24 cols filling in across the tail; t-spine
+    contiguous daily so _pcol shift(1)==1d exactly); asopr 18 scattered
+    exact-1.0 prints are sub-threshold singletons (PIN_MASK requires
+    >=3d runs; SOPR legitimately crosses exactly 1.0) with zero harness
+    consumers; exporter groupby().last() = declared last-writer-wins
+    dedup on same-day duplicate stamps; hit=gross>deadband is the
+    enforced contract invariant (episode wins separately net>0)."
+  - "verifier: 'rewrites' list was computed then silently dropped
+    (residual line from A32 edit) — value-signature alerts now actually
+    report; hash boundary extended to nested/non-CSV files inside
+    events* dirs, all top-level events*.csv, and source_spans.json
+    itself (the coverage baseline is a trust root — an out-of-band
+    rewrite to absorb a collapse now leaves a hash trail); every event-
+    dir enumeration switched glob->rglob (contract sweep, in-sample
+    reconcile, report freshness, manifest set check, morning
+    validate_event_files)."
+  - "anchor journal: every seal now appends reports/anchor_journal.md
+    (stamp + changed/removed/added diffs) — a silent re-anchor is
+    indistinguishable from tamper-absorption otherwise; identical seals
+    are no-ops. Journal files deliberately outside the hash boundary."
+  - "bless path exercised live: coverage sentinel journaled the 3
+    quarantine shrinkages (eb 5792->5160, hl 2176->1145, cme 2176->2078)
+    to coverage_journal.md, baseline recommitted post-verify; anchoring
+    sole-failure self-sealed twice with full diffs journaled."
+  - "fault injection: single historical fng cell edit -> VALUES
+    REWRITTEN alert fired on the touched column; bulk to_csv round-trip
+    flagged 14 columns (bit-drift detection is the intended property —
+    restored file re-verifies 0 mismatches)."
+  - "final state: ALL PASS, 144 artifacts anchored. RESEARCH_SUPPORTED
+    remains 0 — no promotion claim."
+a34_upstream_btc_price_loss:
+  - "2026-09-27 21:00 chain caught a real upstream break: the
+    blockchain_api_* column family was dropped from the upstream
+    harmony_master_clean.parquet entirely — macro_daily.csv lost
+    btc_price, harmony_daily() KeyError'd, and rounds 4/6/8/10/13 +
+    forward eval + verify FAILED loudly (note records all 7)."
+  - "repair: btc_price re-sourced to SPIKE's own coinmetrics priceusd
+    via the existing LOCAL_SOURCES mechanism in export_macro_daily.py —
+    live nightly feed (n=5915, 2010-07-18 -> 2026-09-26), overlaps
+    px_bitstamp at 0.11% median |rel diff| (n=4287). Forced provider
+    substitution, loud via the [spike-coinmetrics] span tag; the
+    upstream column is gone, not restatable. DEAD_COLUMNS note in
+    export_harmony_extended updated to match."
+  - "coverage sentinel also journaled a genuine upstream restatement:
+    13 harmony_extended columns (px_*, funding, liq, mvrv variants,
+    cdd) changed values inside the sealed baseline span tonight —
+    precision-level corrections, verified sane vs independent
+    priceusd/capmvrvcur (bit-identical mvrv, 0.15% px). Alerts durable
+    in coverage_journal.md; baseline recommitted after the crash cycle
+    self-healed (harmony_daily.* entries re-emerged post-fix)."
+  - "all 5 crashed runners + forward eval regenerated clean; anchoring
+    sole-failure self-sealed the 61-artifact regen set; final verifier
+    ALL PASS."
+
+a35_forward_r14_leads:
+  date: "2026-09-28"
+  scope: "declared 3 round-14 short leads forward (fwd_oi_divergence_short,
+    fwd_equity_lead_short, fwd_riskoff_cluster) at CUTOFF_R14 =
+    2026-09-29T00:00:00Z — first daily boundary whose lagged inputs
+    publish strictly after the 2026-09-28 declaration. Wired through
+    LEAD_CUTOFFS/LAGGED_INPUTS/LEAD_INPUT_SPECS/LEAD_DRIFT_SPECS,
+    runner emit+premise, manifest r14_leads, verifier emit_for arms."
+  verifier_fix: "forward input freshness previously FAILed leads whose
+    inputs were alive but hadn't yet published across a future cutoff
+    (publish-lag reality, not extinction). Dead is now defined as stale
+    vs NOW (7d bound); fresh-but-uncrossed leads report a WARN
+    'awaiting first input crossing' and auto-PASS — an extinct input
+    still cannot hide behind a future cutoff."
+  result: "3 leads AWAITING (inputs last=2026-09-25, alive); accrual
+    auto-resumes on first input crossing. 17/17 forward files;
+    publish-lag invariance PASS incl. new arms; ALL PASS, sealed."
+
+a36_deep_dive_2026_09_28:
+  date: "2026-09-28"
+  scope: "user-requested full-system deep dive after round15 + forward
+    declarations"
+  findings_and_repairs:
+    - "morning chain runner list was missing run_round14.py and
+      run_round15.py — in-sample files stayed anchored but would not
+      extend to fresh data (freshness would eventually trip). Both
+      runners added to run_evals()."
+    - "report status vocabulary split honestly: INPUT_DEAD previously
+      conflated extinct inputs with alive-but-publish-lagged ones
+      awaiting a fresh cutoff. Runner now prints AWAITING for
+      input-alive (<7d vs now) vs INPUT_DEAD (>7d); verifier reconcile
+      enforces BOTH directions (AWAITING->dead check, INPUT_DEAD->
+      fresh check)."
+    - "tonight's 21:00 chain result=1 explained: all 12 runners +
+      forward eval ran clean; verify flagged coverage (6 upstream
+      restatements — funding_agg_archive, liq long/short, lth/sth mvrv,
+      cdd) + anchoring regen diff; baseline recommitted 21:19 with
+      alerts journaled; anchoring sole-sealed. Honest end-to-end."
+    - "BGeometrics upstream restating sealed history 3 nights running —
+      journal trail durable; flagged as structural upstream mutability
+      risk, not a SPIKE defect."
+    - "spot-verified one round-15 event end-to-end by hand (dormancy
+      2019-09-07): signal threshold, lag, gross, fee, hit contract all
+      recompute bit-identical."
+    - "dormancy publish cadence verified daily (p50/p90 gap=1d, max 8d)
+      — 7d awaiting bound correct for the feed's cadence."
+  result: "ALL PASS, 163 artifacts sealed"
+
+# ── Round 16: basis1 mechanism audit (declared 2026-09-29 BEFORE execution) ──
+# Not a new candidate — the declared follow-up on the ONE WATCH survivor from
+# round2_extended_eval ("sub-period robustness, mechanism check"). Billed to
+# BASIS-1: same candidate id, same spec, deeper tests — total_signal_evaluations
+# and effective_families unchanged.
+round16_basis1_audit:
+  data: "identical extended frames as round2 (funding_full + 4h candles);
+         re-emitted events reconciled vs events_extended/basis1_premium_p10.csv"
+  trial_accounting: "audit of basis1_premium_p10 — billed to BASIS-1; no new family"
+  questions:
+    - q_subperiod: "net by calendar quarter + leave-one-year-out — does it
+                    survive outside 2025 (+3705bp vs 2024 -141 / 2026 +159)?"
+    - q_cluster: "top-5 events' share of total net bp (spec-level 60%
+                  cluster-cap analog)"
+    - q_dose: "dose-response — premium <= p5 within-window should beat the
+               shallow p5..p10 band if convergence is the mechanism"
+    - q_converge: "premium should normalize upward during holds (median
+                   premium_at_exit > premium_at_entry)"
+    - q_placebo: "re-run time-shift placebo (~p=.040 at round2) — confirm
+                  no degradation"
+  kill_rule: "KILL -> invalidation corpus if ANY: >50% of calendar quarters
+    net <= 0; top-5 events contribute >60% of total net bp; deeper-band mean
+    <= shallow-band mean; median premium delta <= 0. SURVIVE => stays WATCH
+    (not promotion — untouched-forward evidence decides)."
+  report: reports/report_round16.md
+  hypotheses:
+    - id: basis1_premium_p10_enriched
+      spec: "round-2 basis1 event stream enriched with premium-at-entry/
+        exit/depth diagnostics for the mechanism audit (same events,
+        no re-selection)"
+      status: artifact
+  result: "**KILL** on 2 independent triggers (2026-09-29). Reconcile MATCH
+    vs round-2 artifact (n=606 covered, net +3723bp identical). (1) top-5
+    events = +5171bp = 139% of total net — remaining 601 events net
+    negative, edge is 5 trades (cap 60%). (2) no dose-response: deeper
+    dislocations (prem<=p5, n=330) mean -8.2bp vs shallow band +23.3bp —
+    backwards from mechanism prediction. Convergence premise is real
+    (median premium delta +1.31e-04, 79.5% converge upward; placebo
+    p=.040 confirmed) but the trading edge does not scale with
+    dislocation depth — round-2 P&L is timing luck. Sub-period prong did
+    not fire (3/10 quarters <=0). BASIS-1 family closed; no WATCH
+    survivors remain."
+
+# ── Round 17: new-mechanism coverage audit (commissioned 2026-09-29) ────
+# NOT an evaluation round — zero signal evaluations, zero new families
+# billed. Answers "is any powered new-mechanism eval left on owned data?"
+round17_coverage_audit:
+  trial_accounting: "audit only — total_signal_evaluations and
+    effective_families unchanged"
+  scope: "feed inventory x family claims matrix; screen-factor
+    disposition; residue power check; unlock-path enumeration"
+  findings:
+    - "every owned feed already powered >=1 family eval; untouched residue
+       (grok liq_journal 173h, l2 445 rows, oi_journal days) is
+       unpowerable by construction — evaluating it yields noise verdicts"
+    - "all 4 harmony_screen confirmed factors resolve: valuation-MR =
+       killed trend/MR overlap; OI-level->21d reversion screen-validated
+       incl. holdout but dedicated eval underpowered (~60 events) and
+       double-dips; coinbase premium BLOCKED leak; cohorts = same
+       on-chain-daily class as 6+ powered KILLs"
+    - "census: 52 families, ~136 evaluations, zero promotion-ready
+       survivors; 18 fwd_* leads are the live untouched-forward surface"
+  unlock_paths:
+    - "HL-native OI + liquidation history (grok journals accruing)"
+    - "options skew / DVOL (Deribit) — ERRATUM 2026-09-29: NOT unowned —
+       harmony_extended already carries dvol_close (n=2014), ATM IV x4
+       tenors, skew25 x3 (ends 2026-02-19, stale), and round11 evaluated
+       the domain (dvol_spike_bounce KILL, skew/iv WATCH). Deribit adds
+       provider-native provenance + freshness continuation, not a new
+       domain. Corrected unlock: extended-history options surface."
+    - "cross-venue orderbook depth time-series"
+    - "HL premium-index long history (venue-native basis)"
+  note: "see round17b_data_acquisition for execution"
+  verdict: "owned-data mechanism space EXHAUSTED at declared power;
+    program closure stands until new data domain or ex-ante mechanism
+    with zero family overlap exists"
+  report: reports/report_round17_coverage.md
+
+# ── Round 17b: data acquisition — new domains accrual (executed 2026-09-29) ──
+# Not an evaluation. Opens the two cheapest unlock paths named by the
+# round-17 audit. Provider-native definitions below are the record.
+round17b_data_acquisition:
+  backfilled_now:
+    - "data_extended/deribit/{btc,eth}_dvol_1d.json — DVOL OHLC daily,
+       n=2016 each (~Mar-2021 -> today). Provider-native DVOL (harmony
+       dvol_close ends 2026-02-19, stale — this feed is fresher and
+       venue-native). OPTIONS-VOL family is NOT new (round11 evaluated
+       it — see erratum in round17 unlock_paths); the feed's value is
+       provenance + continuation."
+    - "data_extended/deribit/{btc,eth}_funding_8h.json — USDT-perp funding
+       prints n=4464 (~4y); {sol,xrp,doge,avax,link}_usdc_funding_8h.json
+       n=3720 each. THIRD-VENUE funding domain: enables 3-venue funding
+       dislocation families vs the killed 2-venue xvenue set — declared
+       new family required (venue triangulation is a different mechanism
+       claim than pairwise disloc)."
+  accruing_live:
+    - "data_live/hl_ctx_{asset}.jsonl — HL mainnet metaAndAssetCtxs hourly:
+       OI coins, mark/oracle/mid px, venue-native premium, predicted
+       funding, day volume. Assets: BTC SOL ETH XRP DOGE AVAX LINK.
+       Unlocks HL OI history + venue-native premium index over time."
+    - "data_live/hl_book_{asset}.jsonl — HL l2Book 20-level raw book +
+       computed depth bands (d10/d25/d50), spread_bps. Unlocks the
+       orderbook-depth time-series domain."
+    - "data_live/deribit_{dvol,funding}_live_*.jsonl — spot checks,
+       deduped on last-t."
+  mechanism: "tools/collect_live.py one-shot appends; scheduled hourly as
+    task 'SPIKE-Collect-Live' (schtasks, venv python). tools/backfill_deribit.py
+    rerunnable — merge-on-accrual, _write_safe refuses truncation."
+  caveat: "power horizon — OI/depth domains need weeks-to-months of
+    accrual before a powered eval is possible; declaring families on
+    them now would be underpowered noise. DVOL daily is usable NOW for
+    daily-horizon specs (n~2000)."
+
+# ── Round 18: DVOL retest — declared 2026-09-29 BEFORE execution ─────────
+# Crypto-native implied-vol capitulation on provider-native Deribit DVOL
+# (round17b feed). BILLED to OPTIONS-VOL: same mechanism claim as the
+# KILLED dvol_spike_bounce_1d (round11, harmony dvol_close +1d horizon,
+# n=138 hit .471) — these are horizon/param retests of a dead mechanism,
+# not a new family. Honest prior: KILL. Value of running anyway: provider-
+# native series (harmony dvol_close ends 2026-02-19; Deribit feed extends
+# +7mo to today) and horizon coverage — does the +5d window resurrect
+# what +1d killed? effective_families unchanged (53); evals 83 -> 85.
+round18_dvol:
+  data: "data_extended/deribit/btc_dvol_1d.json (n=2016, Mar-2021 -> today)
+         x candles/btc_1d_full.json; BTC-only (DVOL is BTC-derived);
+         inner-join on day t, uncovered DVOL days dropped with count
+         reported"
+  publish_lag: "none — DVOL 1D close is available at bar close (no
+    FRED-style publication lag; distinct from vix_spike's shift(1))"
+  candidates:
+    - id: dvol_spike_btc_long
+      family: OPTIONS-VOL
+      mechanism: "crypto-native implied-vol capitulation: a DVOL 5d
+                  spike marks forced-hedging stress that resolves into
+                  a bounce (port of vix_spike_btc_long)"
+      spec: "dvol_c 5d change >= rolling-252d p90 (min_periods 120) ->
+             BTC LONG +5d close-close; cooldown 5d"
+      falsification: "standard gates (power/wilson/DSR/placebo/boundary/
+                      drift/implausibility)"
+    - id: dvol_level_long
+      family: OPTIONS-VOL
+      mechanism: "sustained-stress variant: extreme DVOL LEVEL (not the
+                  spike) marks the capitulation regime"
+      spec: "dvol_c >= rolling-252d p95 (min_periods 120) -> BTC LONG
+             +5d close-close; cooldown 5d"
+      falsification: "same gates"
+  report: reports/report_round18.md
+round18_dvol_results:
+  dvol_spike_btc_long: "MODEL_RISK — n=39, hit .487, net +2573bp, Sharpe 1.01
+    but MinTRL 3645d/MinBTL 20.7y@SR0.5, placebo .493, bb .383, era-decayed
+    (2023/24 +5045 -> 2025/26 -2472). Same decay signature as the round-11
+    +1d kill: crypto-native vol-spike capitulation does not produce a
+    tradeable bounce at any tested horizon."
+  dvol_level_long: "UNDERPOWERED — n=23 (<30 powered floor), hit .348,
+    net -1457bp. Level-trigger fires too rarely on daily clock."
+  note: "OPTIONS-VOL family now: 1 KILL + 1 MODEL_RISK + 1 UNDERPOWERED +
+    2 era-decayed WATCH (skew_extreme, iv_term_inversion — both forward-
+    accruing). No powered survivor; DVOL retest value was freshness/
+    horizon coverage, verdict confirms the prior."
+  join_coverage: "1215/2016 DVOL days matched to BTC closes (HL BTC 1d
+    history starts ~2023-05; pre-listing DVOL rows correctly dropped)"
+
+# ── Round 19: §87 exit-path faithfulness check (declared 2026-09-29) ─────
+# BILLED to FRA (retest class). The round-2 kill used 4h forward returns;
+# the live shadow spec's payout is exit-mechanics (4% SL / +8% TP touch /
+# 3% trailing after TP / 24h time-stop). Question: does the kill transfer
+# to the spec's actual payout shape on the same p90/r3000 trigger? The
+# intra-bar path ambiguity on 4h OHLC is bounded by testing BOTH orders
+# (SL-first = conservative, TP-first = optimistic). Fee 10bp RT as spec.
+round19_exitpath_check:
+  data: "same extended frames as round2 (funding_full BTC r3000 p90 trigger,
+         4h candles); identical event set, only the payout leg differs"
+  spec: "entry at trigger-bar close; exit at first of: -4% SL touch,
+         +8% TP touch then 3% trail from post-TP high, 24h (6-bar) stop.
+         Payout under both intra-bar orderings reported."
+  falsification: "transfers if net <= 0 under BOTH orderings; ambiguous
+    if orderings straddle zero (then the trigger kill is confirmed but
+    path-faithfulness is unresolved and the live stream stays the arbiter)"
+round19_exitpath_result: "TRANSFERS — SL-first and TP-first orderings
+  produce IDENTICAL outcomes (n=122, hit .484, net -1511bp, Sharpe -0.43,
+  exits 106 time/14 sl/2 trail): no 4h bar's range spanned both bounds in
+  a way that mattered. The round-2 kill used the spec's exact payout
+  shape all along; §87 is dead in its own mechanics, not merely as a
+  forward-return approximation. Reconcile MATCH vs saved events."
+
+# ── Round 19b: carry WATCH forward declaration (declared 2026-09-29) ─────
+# funding_carry_24h is the program's strongest living WATCH (A29 override:
+# +13.8k bp, Wilson-lo .512 PASS, drift skill +13.7bp/ev t=1.93, recent
+# eras positive) but had NO forward lead — its evidence stream was blind.
+# Declaring the SAME q=0.10 spec forward; the killed q=0.05 extreme
+# variant is deliberately NOT declared (it is dead, not a lead).
+forward_declared_r19:
+  cutoff_utc: "2026-09-30T00:00:00Z"
+  hypotheses:
+    - id: fwd_carry_p90_p10
+      spec: "HL funding rate >= rolling-8760-print p90 -> SHORT (collect);
+        <= p10 -> LONG (collect); hold 24h on 4h bars; gross =
+        dir*px_ret + (-dir)*sum(next 24 realized hourly rates); cooldown
+        24 prints; 10bp RT; pooled 7 assets. SAME direction as WATCH —
+        forward accrual decides whether the override survives untouched"
+      origin: "round-9 funding_carry_24h — A29 verdict_override WATCH
+        after the v1 8h-cadence bug fix (drift-confirmed income skill)"
+      premise_risk: "q=0.05 extreme variant KILL'd separately — if
+        forward reverts toward the extreme variant's failure, demote"

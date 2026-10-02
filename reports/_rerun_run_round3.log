@@ -1,0 +1,31 @@
+# Phase -1 Round 3 — new-mechanism families (extended data)
+
+Declared pre-execution in manifest `round3_candidates`. Mechanisms:
+settlement cash-flow drift, cross-venue funding dislocation,
+cross-venue lead/lag, cross-venue price-basis convergence.
+Data: HL funding to launch, HL 1h (208d) / 4h (833d) bars,
+Binance funding (2019+) + 1h klines (~2y). n_trials=13.
+
+| candidate | n | n_uncov | hit | wilson_lo | gate | net_bp | Sharpe | PSR | DSR | placebo_p | splits | leak | **verdict** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| settle1_funding_drift | 5410 | 32060 | 0.489 | 0.475 | FAIL | -55379 | -13.59 | 0.000 | 0.000 | 0.774 | consistent | pass | **KILL** |
+  (power: n=5410 (n_eff=3740), Sharpe=-13.59, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=+0.4bp/ev t=0.51
+  bb_p=0.000 (block=5)
+  eras: 2026 n=5410 net=-55379
+| xvenue_funding_disloc | 365 | 202 | 0.534 | 0.483 | FAIL | 3125 | 0.53 | 0.789 | 0.014 | 0.065 | mixed | FAIL | **BLOCKED** |
+  (power: n=365 (n_eff=311), Sharpe=0.53, MinTRL=851525d, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=+24.0bp/ev t=2.39
+  bb_p=0.173 (block=5)
+  eras: 2024 n=117 net=-458 | 2025 n=118 net=+2570 | 2026 n=130 net=+1013
+| xvenue_leadlag_1h | 756 | 2 | 0.450 | 0.415 | FAIL | -8593 | -4.38 | 0.000 | 0.000 | 0.478 | consistent | pass | **KILL** |
+  (power: n=756 (n_eff=521), Sharpe=-4.38, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=+0.1bp/ev t=0.03
+  bb_p=0.001 (block=5)
+  eras: 2026 n=756 net=-8593
+| xvenue_basis_converge | 207 | 0 | 0.415 | 0.350 | FAIL | -3821 | -2.13 | 0.040 | 0.000 | 0.252 | consistent | pass | **KILL** |
+  (power: n=207 (n_eff=57), Sharpe=-2.13, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=+11.0bp/ev t=0.90
+  bb_p=0.028 (block=5)
+  eras: 2026 n=207 net=-3821
+

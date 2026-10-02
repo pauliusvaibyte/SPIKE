@@ -1,0 +1,120 @@
+# Phase -1 Round 13 — walk-forward selection replay
+
+Screen the flagship rule grid on data <= C only, then evaluate the
+selected config on C -> end. Selection must transfer OOS or the
+flagship's support is selection luck. Costs: strategy_stats @10bp
+IS-select; OOS reported at 10/20/30bp. Clock: px_bitstamp.
+
+## cutoff 2017-01-01
+- IS-selected: f=45 s=200 k=5 a=0.6 damper=NV (in-sample Sharpe 2.01, 288 eligible configs)
+- OOS 2017-01-01->end: Sharpe@10bp=1.34 @20bp=1.26 @30bp=1.21 DSR@10bp=1.000 CAGR=0.55 MaxDD=-0.55
+- OOS buyhold: Sharpe=1.01 CAGR=0.57 MaxDD=-0.83
+- OOS actual-flagship (45/125/5/0.5+NV): Sharpe@10bp=1.58 CAGR=0.70
+- top-5 IS configs: (45, 200, 5, 0.6, 'NV')(SR 2.01); (45, 200, 10, 0.6, 'NV')(SR 2.01); (45, 200, 5, 0.5, 'NV')(SR 2.00); (60, 200, 5, 0.6, 'NV')(SR 2.00); (45, 200, 10, 0.5, 'NV')(SR 2.00)
+
+## cutoff 2019-01-01
+- IS-selected: f=45 s=200 k=5 a=0.6 damper=NV (in-sample Sharpe 1.89, 288 eligible configs)
+- OOS 2019-01-01->end: Sharpe@10bp=1.30 @20bp=1.22 @30bp=1.16 DSR@10bp=0.999 CAGR=0.48 MaxDD=-0.42
+- OOS buyhold: Sharpe=0.95 CAGR=0.49 MaxDD=-0.77
+- OOS actual-flagship (45/125/5/0.5+NV): Sharpe@10bp=1.58 CAGR=0.64
+- top-5 IS configs: (45, 200, 5, 0.6, 'NV')(SR 1.89); (45, 200, 10, 0.6, 'NV')(SR 1.89); (45, 200, 5, 0.5, 'NV')(SR 1.88); (45, 200, 10, 0.5, 'NV')(SR 1.88); (20, 200, 5, 0.5, 'V')(SR 1.87)
+
+## cutoff 2021-01-01
+- IS-selected: f=45 s=125 k=5 a=0.6 damper=NV (in-sample Sharpe 1.89, 288 eligible configs)
+- OOS 2021-01-01->end: Sharpe@10bp=1.28 @20bp=1.18 @30bp=1.12 DSR@10bp=0.998 CAGR=0.41 MaxDD=-0.36
+- OOS buyhold: Sharpe=0.58 CAGR=0.18 MaxDD=-0.77
+- OOS actual-flagship (45/125/5/0.5+NV): Sharpe@10bp=1.29 CAGR=0.41
+- top-5 IS configs: (45, 125, 5, 0.6, 'NV')(SR 1.89); (45, 125, 10, 0.6, 'NV')(SR 1.89); (45, 200, 5, 0.6, 'NV')(SR 1.88); (45, 125, 5, 0.5, 'NV')(SR 1.88); (20, 125, 5, 0.5, 'NV')(SR 1.88)
+
+## cutoff 2023-01-01
+- IS-selected: f=45 s=125 k=10 a=0.6 damper=NV (in-sample Sharpe 1.75, 288 eligible configs)
+- OOS 2023-01-01->end: Sharpe@10bp=1.48 @20bp=1.37 @30bp=1.30 DSR@10bp=0.996 CAGR=0.48 MaxDD=-0.19
+- OOS buyhold: Sharpe=1.16 CAGR=0.54 MaxDD=-0.53
+- OOS actual-flagship (45/125/5/0.5+NV): Sharpe@10bp=1.56 CAGR=0.52
+- top-5 IS configs: (45, 125, 10, 0.6, 'NV')(SR 1.75); (45, 125, 5, 0.6, 'NV')(SR 1.75); (45, 125, 10, 0.5, 'NV')(SR 1.75); (45, 125, 5, 0.5, 'NV')(SR 1.75); (45, 125, 10, 0.6, 'N')(SR 1.73)
+
+# Leads replay — direction + threshold re-derived per cutoff
+
+## nrpl(one-sided hi) @2019-01-01
+- IS-selected: mode=long pct=(0.2,0.8) IS n=265 net=+65017bp
+- OOS: n=229 hit=0.559 net=+28358bp
+## nrpl(one-sided hi) @2021-01-01
+- IS-selected: mode=long pct=(0.2,0.8) IS n=330 net=+80660bp
+- OOS: n=163 hit=0.521 net=+11571bp
+## nrpl(one-sided hi) @2023-01-01
+- IS-selected: mode=long pct=(0.2,0.8) IS n=361 net=+87530bp
+- OOS: n=133 hit=0.511 net=+5845bp
+## nrpl(one-sided hi) @2025-01-01
+- IS-selected: mode=long pct=(0.2,0.8) IS n=467 net=+90635bp
+- OOS: n=27 hit=0.593 net=+2741bp
+
+## puell @2019-01-01
+- IS-selected: mode=cont pct=(0.15,0.85) IS n=200 net=+76871bp
+- OOS: n=192 hit=0.536 net=+23796bp
+## puell @2021-01-01
+- IS-selected: mode=cont pct=(0.15,0.85) IS n=246 net=+80244bp
+- OOS: n=146 hit=0.562 net=+18136bp
+## puell @2023-01-01
+- IS-selected: mode=cont pct=(0.15,0.85) IS n=294 net=+92796bp
+- OOS: n=99 hit=0.545 net=+7747bp
+## puell @2025-01-01
+- IS-selected: mode=cont pct=(0.15,0.85) IS n=356 net=+96950bp
+- OOS: n=37 hit=0.568 net=+3592bp
+
+## reserve_risk @2019-01-01
+- IS-selected: mode=cont pct=(0.2,0.8) IS n=218 net=+73901bp
+- OOS: n=170 hit=0.529 net=+15562bp
+## reserve_risk @2021-01-01
+- IS-selected: mode=cont pct=(0.2,0.8) IS n=257 net=+74195bp
+- OOS: n=132 hit=0.538 net=+14712bp
+## reserve_risk @2023-01-01
+- IS-selected: mode=cont pct=(0.2,0.8) IS n=323 net=+87202bp
+- OOS: n=65 hit=0.569 net=+1968bp
+## reserve_risk @2025-01-01
+- IS-selected: mode=cont pct=(0.2,0.8) IS n=369 net=+88506bp
+- OOS: n=19 hit=0.474 net=+89bp
+
+## skew25_1m @2019-01-01: no config reached IS n>=15
+## skew25_1m @2021-01-01: no config reached IS n>=15
+## skew25_1m @2023-01-01
+- IS-selected: mode=revert pct=(0.2,0.8) IS n=56 net=+6546bp
+- OOS: n=139 hit=0.532 net=+2289bp
+## skew25_1m @2025-01-01
+- IS-selected: mode=revert pct=(0.2,0.8) IS n=148 net=+8617bp
+- OOS: n=47 hit=0.553 net=+217bp
+
+## premium_basis @2021-01-01
+- IS-selected: mode=runaway p=0.95 IS n=17 net=+9314bp
+- OOS: n=534 hit=0.427 net=-24302bp
+## premium_basis @2023-01-01
+- IS-selected: mode=converge p=0.9 IS n=314 net=+19375bp
+- OOS: n=731 hit=0.536 net=+4142bp
+## premium_basis @2025-01-01
+- IS-selected: mode=converge p=0.9 IS n=713 net=+21876bp
+- OOS: n=332 hit=0.518 net=+1641bp
+
+## fng_fear @2019-01-01
+- IS-selected: mode=long fear=20 IS n=16 net=+1034bp
+- OOS: n=75 hit=0.560 net=+4519bp
+## fng_fear @2021-01-01
+- IS-selected: mode=long fear=20 IS n=34 net=+3940bp
+- OOS: n=57 hit=0.561 net=+1614bp
+## fng_fear @2023-01-01
+- IS-selected: mode=long fear=10 IS n=17 net=+8894bp
+- OOS: n=9 hit=0.333 net=-866bp
+## fng_fear @2025-01-01
+- IS-selected: mode=long fear=10 IS n=17 net=+8894bp
+- OOS: n=9 hit=0.333 net=-866bp
+
+## mom24h(binance BTC 4h) @2021-01-01
+- IS-selected: mode=fade horizon=6 IS n=479 net=-1928bp
+- OOS: n=2092 hit=0.531 net=-7707bp
+
+## mom24h(binance BTC 4h) @2023-01-01
+- IS-selected: mode=fade horizon=6 IS n=1209 net=-1573bp
+- OOS: n=1362 hit=0.526 net=-8088bp
+
+## mom24h(binance BTC 4h) @2025-01-01
+- IS-selected: mode=cont horizon=8 IS n=1455 net=+7905bp
+- OOS: n=473 hit=0.463 net=-4016bp
+

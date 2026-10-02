@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Raw market data (regenerate via tools/backfill_*.py / tools/collect_live.py)
+data_extended/
+data_live/
+data_snapshot/
+data_cache/
+
+# OS noise
+Thumbs.db
+.DS_Store

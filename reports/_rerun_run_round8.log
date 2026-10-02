@@ -1,0 +1,60 @@
+# Phase -1 Round 8 — throughput batch (10 hypotheses)
+
+Declared pre-execution in manifest `round8_batch`. Mechanisms:
+vol shock, volume climax, funding flip, trapped squeeze, alt
+residual reversal, drawdown capitulation, month-end rebalancing,
+taker share (2y retest), VIX spike, RSI-2 (MRV retest).
+Universe: BTC,SOL,ETH,XRP,DOGE,AVAX,LINK. n_trials=34.
+
+| candidate | n | n_uncov | hit | wilson_lo | gate | net_bp | Sharpe | PSR | DSR | placebo_p | splits | leak | **verdict** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| rv_spike_fade_4h | 1308 | 1 | 0.520 | 0.493 | FAIL | -18372 | -0.87 | 0.106 | 0.000 | 0.395 | mixed | pass | **KILL** |
+  (power: n=1308 (n_eff=558), Sharpe=-0.87, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.078 (block=5)
+  eras: 2024 n=288 net=+4643 | 2025 n=590 net=-8644 | 2026 n=430 net=-14371
+  per-asset net: AVAX +1244 | BTC -1883 | DOGE -4674 | ETH -3176 | LINK -3696 | SOL -2567 | XRP -3619
+| volume_climax_fade | 398 | 0 | 0.515 | 0.466 | FAIL | -4840 | -0.39 | 0.297 | 0.000 | 0.803 | mixed | pass | **KILL** |
+  (power: n=398 (n_eff=252), Sharpe=-0.39, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.270 (block=5)
+  eras: 2024 n=116 net=+3116 | 2025 n=223 net=-7277 | 2026 n=59 net=-679
+  per-asset net: AVAX +649 | BTC -947 | DOGE +1316 | ETH -3647 | LINK +1402 | SOL -2968 | XRP -646
+| funding_flip_momentum | 10058 | 3081 | 0.500 | 0.490 | FAIL | -107677 | -3.49 | 0.000 | 0.000 | 0.839 | consistent | pass | **KILL** |
+  (power: n=10058 (n_eff=77), Sharpe=-3.49, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.000 (block=5)
+  eras: 2024 n=1570 net=-15110 | 2025 n=4207 net=-51985 | 2026 n=4281 net=-40581
+  per-asset net: AVAX -15768 | BTC -11313 | DOGE -15016 | ETH -23363 | LINK -11025 | SOL -17278 | XRP -13915
+| trapped_positioning_squeeze | 1679 | 0 | 0.481 | 0.457 | FAIL | -18978 | -0.44 | 0.256 | 0.000 | 0.900 | consistent | pass | **KILL** |
+  (power: n=1679 (n_eff=310), Sharpe=-0.44, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.227 (block=5)
+  eras: 2024 n=434 net=+1074 | 2025 n=812 net=-18689 | 2026 n=433 net=-1364
+  per-asset net: AVAX +719 | BTC -3063 | DOGE +1797 | ETH +3450 | LINK -8709 | SOL -6594 | XRP -6578
+| alt_resid_reversal_1d | 466 | 1 | 0.464 | 0.419 | FAIL | -31801 | -1.33 | 0.011 | 0.000 | 0.004 | consistent | pass | **KILL** |
+  (power: n=466 (n_eff=297), Sharpe=-1.33, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.009 (block=5)
+  eras: 2023 n=3 net=+74 | 2024 n=201 net=-30049 | 2025 n=166 net=+1753 | 2026 n=96 net=-3579
+  per-asset net: AVAX -7392 | DOGE -15075 | ETH -4567 | LINK +1891 | SOL -2554 | XRP -4103
+| drawdown_bounce_1d | 693 | 0 | 0.481 | 0.444 | FAIL | 16412 | 0.54 | 0.833 | 0.000 | 0.910 | mixed | pass | **UNDERPOWERED** |
+  (power: n_eff=24 < 30 (span 1174d / median horizon 7d) — overlapping windows are not independent)
+  bb_p=0.393 (block=6)
+  eras: 2023 n=74 net=+11251 | 2024 n=210 net=+36299 | 2025 n=231 net=-13369 | 2026 n=178 net=-17769
+  per-asset net: AVAX -11033 | BTC +3589 | DOGE +8707 | ETH -1463 | LINK +4228 | SOL +9152 | XRP +3232
+| month_end_drift_1d | 546 | 0 | 0.527 | 0.486 | FAIL | 3397 | 0.07 | 0.552 | 0.000 | 0.718 | mixed | pass | **KILL** |
+  (power: n=546 (n_eff=39), Sharpe=0.07, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.472 (block=10)
+  eras: 2023 n=98 net=+17475 | 2024 n=168 net=-5174 | 2025 n=168 net=+2418 | 2026 n=112 net=-11322
+  per-asset net: AVAX -1266 | BTC -892 | DOGE -478 | ETH -4886 | LINK +3409 | SOL +1271 | XRP +6240
+| taker_share_fade_1h | 3762 | 8532 | 0.511 | 0.495 | FAIL | -40658 | -12.41 | 0.000 | 0.000 | 0.433 | consistent | pass | **KILL** |
+  (power: n=3762 (n_eff=2309), Sharpe=-12.41, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.000 (block=5)
+  eras: 2026 n=3762 net=-40658
+  per-asset net: AVAX -4650 | BTC -5499 | DOGE -7581 | ETH -8689 | LINK -3056 | SOL -5611 | XRP -5573
+| vix_spike_btc_long | 204 | 0 | 0.554 | 0.485 | FAIL | 36898 | 1.11 | 1.000 | 0.000 | 0.351 | consistent | pass | **MODEL_RISK** |
+  (power: n=204 (n_eff=204), Sharpe=1.11, MinTRL=1882d, MinBTL=20.7y@SR0.5)
+  bb_p=0.015 (block=5)
+  eras: 2010 n=1 net=-2079 | 2011 n=19 net=+9272 | 2012 n=11 net=+1609 | 2013 n=13 net=+11792 | 2014 n=16 net=-2286 | 2015 n=12 net=+680 | 2016 n=10 net=+1403 | 2017 n=7 net=+6328 | 2018 n=19 net=-1058 | 2019 n=8 net=+3248 | 2020 n=13 net=-581 | 2021 n=15 net=+7548 | 2022 n=13 net=-1785 | 2023 n=9 net=+2714 | 2024 n=16 net=-291 | 2025 n=11 net=-1080 | 2026 n=11 net=+1463
+| rsi2_connors_1d | 2895 | 1 | 0.508 | 0.490 | FAIL | -55366 | -0.79 | 0.074 | 0.000 | 0.254 | consistent | pass | **KILL** |
+  (power: n=2895 (n_eff=916), Sharpe=-0.79, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.050 (block=6)
+  eras: 2023 n=493 net=-1804 | 2024 n=844 net=-40894 | 2025 n=909 net=+17390 | 2026 n=649 net=-30058
+  per-asset net: AVAX -6329 | BTC -7629 | DOGE -17379 | ETH -2213 | LINK +1139 | SOL -11205 | XRP -11749
+

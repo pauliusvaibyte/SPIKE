@@ -1,0 +1,16 @@
+verify_integrity — 2026-09-25 14:38 UTC
+PASS  event contracts  — 90 files clean
+PASS  open-bar hygiene  — 70 files clean
+PASS  freshness (1h tails)  — all files complete-through-write + recently written
+PASS  forward completeness  — 14/14 lead files, report fresh
+PASS  forward report reconciliation  — 14 leads recompute to reported values
+WARN  column stalls (26): harmony_extended.oi_futures_binance last=2026-02-19; harmony_extended.oi_futures_cme last=2026-02-19; harmony_extended.oi_futures_hyperliquid last=2026-02-19; harmony_extended.oi_futures_deribit last=2026-02-19; harmony_extended.iv_atm_1w last=2026-02-19; harmony_extended.iv_atm_1m last=2026-02-19; harmony_extended.iv_atm_3m last=2026-02-19; harmony_extended.iv_atm_6m last=2026-02-19; harmony_extended.skew25_1w last=2026-02-19; harmony_extended.skew25_1m last=2026-02-19; harmony_extended.skew25_3m last=2026-02-19; harmony_extended.rv_1w last=2026-02-19; harmony_extended.rv_1m last=2026-02-19; harmony_extended.rv_3m last=2026-02-19; harmony_extended.asopr last=2023-10-11; harmony_extended.realized_profit last=2026-07-22; harmony_extended.realized_loss last=2026-07-22; harmony_extended.lth_supply last=2025-08-19; harmony_extended.sth_supply last=2024-09-12; harmony_extended.exchange_balance_total last=2025-11-09; harmony_extended.reserve_risk last=2025-12-28; harmony_extended.liveliness last=2026-02-19; harmony_extended.nvt_adj90 last=2024-07-01; harmony_extended.cdd last=2026-04-26; harmony_daily.funding_confluence_flag last=2026-02-19; harmony_daily.sopr_minus1 last=2026-02-19
+WARN  retired leads (2, inputs extinct upstream): fwd_skew_reversal: skew25_1m+px_bitstamp last=2026-02-19; fwd_reserve_risk_cont: reserve_risk+px_bitstamp last=2025-12-28
+PASS  forward input freshness  — all live declared-lead inputs reach their cutoffs
+PASS  publish-lag truncation invariance  — masked tails leave every lagged lead's events identical
+PASS  coverage baseline  — 79 columns, 0 regressions
+PASS  in-sample report freshness  — all reports at least as fresh as their event files
+PASS  manifest integrity  — ledger parses, declared universe consistent
+PASS  power gate invariants  — episodes counted, shared triggers collapse, refusals carry n_eff, underpowered cannot die
+
+ALL PASS

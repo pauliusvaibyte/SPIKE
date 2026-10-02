@@ -1,0 +1,50 @@
+# Phase -1 Round 10 � FLAGSHIP PORT (Sentinely base+N+V)
+
+Cross-validation of upstream mega_screen's strongest retrospective
+system inside this stack. Spec ported verbatim; 10bp RT (5bp/unit);
+t+1 execution; events = invested days with turnover allocated inside
+episodes. N-leg uses CM exchange flows (flash/provisional status �
+declared limitation); V-leg uses harmony mvrv.
+Universe: BTC max-clock + Binance perp BTC (2019+) + SOL,ETH,XRP,DOGE,AVAX,LINK HL daily. n_trials=40.
+
+| candidate | n | hit | wilson_lo | gate | net_bp | Sharpe | PSR | DSR | placebo_p | splits | leak | **verdict** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| flagship_base_btc | 3423 | 0.537 | 0.520 | PASS | 123694 | 1.65 | 1.000 | 0.000 | 0.000 | consistent | pass | **KILL** |
+  (power: n=3423 (n_eff=67), Sharpe=1.65, MinTRL=747d, MinBTL=20.7y@SR0.5)
+  bb_p=0.000 (block=5)
+  eras: 2013 n=334 net=+43296 | 2014 n=155 net=-1340 | 2015 n=212 net=+4853 | 2016 n=357 net=+6858 | 2017 n=364 net=+26992 | 2018 n=113 net=-3711 | 2019 n=246 net=+8749 | 2020 n=306 net=+13746 | 2021 n=262 net=+8953 | 2022 n=96 net=-2544 | 2023 n=308 net=+7819 | 2024 n=300 net=+7717 | 2025 n=230 net=+1024 | 2026 n=140 net=+1282
+  strategy-stats: BTC: SR(10bp)=1.87 SR(15bp)=1.85 CAGR=1.65 MaxDD=-0.71 turnover=204.0
+  buyhold-benchmark: Sharpe=1.22 CAGR=0.89 MaxDD=-0.85
+| flagship_composite_btc | 3423 | 0.536 | 0.519 | PASS | 101587 | 1.76 | 1.000 | 0.001 | 0.004 | consistent | pass | **KILL** |
+  (power: n=3423 (n_eff=67), Sharpe=1.76, MinTRL=607d, MinBTL=20.7y@SR0.5)
+  bb_p=0.000 (block=5)
+  eras: 2013 n=334 net=+30759 | 2014 n=155 net=-669 | 2015 n=212 net=+4677 | 2016 n=357 net=+5399 | 2017 n=364 net=+20718 | 2018 n=113 net=-3527 | 2019 n=246 net=+7564 | 2020 n=306 net=+12382 | 2021 n=262 net=+8735 | 2022 n=96 net=-2235 | 2023 n=308 net=+7532 | 2024 n=300 net=+8009 | 2025 n=230 net=+961 | 2026 n=140 net=+1282
+  strategy-stats: BTC: SR(10bp)=1.98 SR(15bp)=1.95 CAGR=1.31 MaxDD=-0.58 turnover=274.0
+  buyhold-benchmark: Sharpe=1.22 CAGR=0.89 MaxDD=-0.85
+| flagship_composite_hlbtc | 775 | 0.514 | 0.478 | FAIL | 14469 | 1.61 | 0.999 | 0.036 | 0.052 | consistent | pass | **UNDERPOWERED** |
+  (power: n_eff=17 < 30 (span 1166d / median horizon 1d) � overlapping windows are not independent)
+  bb_p=0.004 (block=5)
+  eras: 2023 n=105 net=+4509 | 2024 n=300 net=+7987 | 2025 n=228 net=+640 | 2026 n=142 net=+1333
+  strategy-stats: BTC: SR(10bp)=1.58 SR(15bp)=1.51 CAGR=0.49 MaxDD=-0.19 turnover=62.5
+  buyhold-benchmark: Sharpe=0.98 CAGR=0.41 MaxDD=-0.53
+| flagship_composite_bnbtc | 1663 | 0.515 | 0.491 | FAIL | 35831 | 1.60 | 1.000 | 0.004 | 0.026 | consistent | pass | **KILL** |
+  (power: n=1663 (n_eff=36), Sharpe=1.60, MinTRL=749d, MinBTL=20.7y@SR0.5)
+  bb_p=0.000 (block=5)
+  eras: 2019 n=20 net=-384 | 2020 n=307 net=+12925 | 2021 n=261 net=+7920 | 2022 n=95 net=-2284 | 2023 n=309 net=+7681 | 2024 n=300 net=+7936 | 2025 n=229 net=+701 | 2026 n=142 net=+1336
+  strategy-stats: BTC: SR(10bp)=1.59 SR(15bp)=1.54 CAGR=0.58 MaxDD=-0.35 turnover=114.1
+  buyhold-benchmark: Sharpe=0.80 CAGR=0.35 MaxDD=-0.77
+| flagship_base_alts | 3944 | 0.500 | 0.485 | FAIL | 96947 | 1.28 | 0.988 | 0.011 | 0.000 | consistent | pass | **UNDERPOWERED** |
+  (power: n_eff=19 < 30 (span 1166d / median horizon 1d) � overlapping windows are not independent)
+  bb_p=0.003 (block=6)
+  eras: 2023 n=653 net=+42784 | 2024 n=1472 net=+42538 | 2025 n=1107 net=+3692 | 2026 n=712 net=+7934
+  per-asset net: AVAX +13047 | DOGE +19567 | ETH +10956 | LINK +16520 | SOL +24597 | XRP +12260
+  strategy-stats: SOL: SR(10bp)=1.31 SR(15bp)=1.29 CAGR=0.80 MaxDD=-0.47 turnover=51.0 | ETH: SR(10bp)=0.93 SR(15bp)=0.90 CAGR=0.31 MaxDD=-0.47 turnover=45.0 | XRP: SR(10bp)=0.74 SR(15bp)=0.70 CAGR=0.28 MaxDD=-0.52 turnover=58.0 | DOGE: SR(10bp)=0.98 SR(15bp)=0.96 CAGR=0.51 MaxDD=-0.54 turnover=35.5 | AVAX: SR(10bp)=0.72 SR(15bp)=0.69 CAGR=0.28 MaxDD=-0.56 turnover=53.0 | LINK: SR(10bp)=0.88 SR(15bp)=0.86 CAGR=0.41 MaxDD=-0.46 turnover=49.0
+  buyhold-benchmark: Sharpe=0.98 CAGR=0.41 MaxDD=-0.53
+| flagship_composite_alts | 3944 | 0.500 | 0.484 | FAIL | 86945 | 1.27 | 0.988 | 0.011 | 0.003 | consistent | pass | **UNDERPOWERED** |
+  (power: n_eff=19 < 30 (span 1166d / median horizon 1d) � overlapping windows are not independent)
+  bb_p=0.004 (block=6)
+  eras: 2023 n=653 net=+42853 | 2024 n=1472 net=+35351 | 2025 n=1107 net=+1034 | 2026 n=712 net=+7707
+  per-asset net: AVAX +9132 | DOGE +18025 | ETH +11332 | LINK +16276 | SOL +21385 | XRP +10795
+  strategy-stats: SOL: SR(10bp)=1.24 SR(15bp)=1.20 CAGR=0.67 MaxDD=-0.47 turnover=66.5 | ETH: SR(10bp)=1.04 SR(15bp)=0.99 CAGR=0.33 MaxDD=-0.42 turnover=56.2 | XRP: SR(10bp)=0.76 SR(15bp)=0.71 CAGR=0.27 MaxDD=-0.47 turnover=65.9 | DOGE: SR(10bp)=1.00 SR(15bp)=0.98 CAGR=0.49 MaxDD=-0.53 turnover=50.8 | AVAX: SR(10bp)=0.58 SR(15bp)=0.54 CAGR=0.18 MaxDD=-0.54 turnover=62.8 | LINK: SR(10bp)=0.97 SR(15bp)=0.94 CAGR=0.44 MaxDD=-0.41 turnover=57.8
+  buyhold-benchmark: Sharpe=0.98 CAGR=0.41 MaxDD=-0.53
+

@@ -1,0 +1,67 @@
+=== EVAL RERUN 2026-09-25T14:15:46Z ===
+--- run_phase_minus_1
+## Branch decision
+
+**Zero survivors on powered data** → next investment is better hypotheses / different information sources, not architecture. This bounds the tested hypothesis space only — it does not prove the venue has no alpha.
+
+--- run_extended_eval
+  (n_uncovered=293, power: n=605 (n_eff=260), Sharpe=0.41, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.271 (block=5)
+  eras: 2024 n=167 net=-141 | 2025 n=278 net=+3705 | 2026 n=160 net=+110
+
+--- run_round3
+  drift-audit: skill=-5.7bp/ev t=-0.82
+  bb_p=0.028 (block=5)
+  eras: 2026 n=207 net=-3821
+
+--- run_round4
+  (power: n=52 (n_eff=52), Sharpe=0.92, MinTRL=5508d, MinBTL=20.7y@SR0.5)
+  bb_p=0.077 (block=5)
+  eras: 2020 n=2 net=-2180 | 2021 n=7 net=+852 | 2022 n=12 net=+1768 | 2023 n=5 net=-505 | 2024 n=14 net=+1514 | 2025 n=4 net=-182 | 2026 n=8 net=+2949
+
+--- run_round6
+  bb_p=0.072 (block=5)
+  eras: 2026 n=60 net=-770
+  per-asset net: BTC -506 | SOL -264
+
+--- run_round7
+  bb_p=0.406 (block=5)
+  eras: 2024 n=73 net=+13444 | 2025 n=141 net=-18242 | 2026 n=106 net=-2298
+  per-asset net: AVAX -1203 | BTC +1747 | DOGE +5085 | ETH -6645 | LINK -849 | SOL -3473 | XRP -1756
+
+--- run_round8
+  bb_p=0.050 (block=6)
+  eras: 2023 n=493 net=-1804 | 2024 n=844 net=-40894 | 2025 n=909 net=+17390 | 2026 n=649 net=-30058
+  per-asset net: AVAX -6329 | BTC -7629 | DOGE -17379 | ETH -2213 | LINK +1139 | SOL -11205 | XRP -11749
+
+--- run_round9
+  bb_p=0.137 (block=5)
+  eras: 2023 n=101 net=-16074 | 2024 n=185 net=-13954 | 2025 n=191 net=-5110 | 2026 n=141 net=+2441
+  per-asset net: AVAX -14192 | BTC -3864 | DOGE -12301 | ETH -5572 | LINK +6097 | SOL -884 | XRP -1981
+
+--- run_round10
+  per-asset net: AVAX +6591 | DOGE +17226 | ETH +10775 | LINK +15501 | SOL +21134 | XRP +8585
+  strategy-stats: SOL: SR(10bp)=1.22 SR(15bp)=1.18 CAGR=0.66 MaxDD=-0.47 turnover=66.5 | ETH: SR(10bp)=1.00 SR(15bp)=0.95 CAGR=0.31 MaxDD=-0.36 turnover=55.5 | XRP: SR(10bp)=0.62 SR(15bp)=0.57 CAGR=0.19 MaxDD=-0.55 turnover=65.6 | DOGE: SR(10bp)=0.95 SR(15bp)=0.92 CAGR=0.45 MaxDD=-0.55 turnover=49.8 | AVAX: SR(10bp)=0.43 SR(15bp)=0.39 CAGR=0.10 MaxDD=-0.55 turnover=63.8 | LINK: SR(10bp)=0.93 SR(15bp)=0.89 CAGR=0.41 MaxDD=-0.41 turnover=59.0
+  buyhold-benchmark: Sharpe=0.98 CAGR=0.41 MaxDD=-0.53
+
+--- run_round11
+  bb_p=0.481 (block=5)
+  eras: 2011 n=8 net=-7651 | 2012 n=31 net=-1341 | 2013 n=30 net=-1879 | 2014 n=15 net=-509 | 2015 n=12 net=-6957 | 2016 n=21 net=-813 | 2017 n=29 net=+2414 | 2018 n=15 net=-6749 | 2019 n=15 net=+2285 | 2020 n=20 net=-675 | 2021 n=20 net=+11210 | 2022 n=23 net=+2834 | 2023 n=8 net=+2329 | 2024 n=24 net=-231 | 2025 n=10 net=+290
+  funding-carry adj: net=-5740bp (paid +298bp carry; 39% of events have funding coverage)
+
+--- run_round12
+    ev = events.dropna(subset=["gross_bp"])
+  File "<workspace>/SPIKE\.venv\Lib\site-packages\pandas\core\frame.py", line 7803, in dropna
+    raise KeyError(np.array(subset)[check].tolist())
+KeyError: ['gross_bp']
+--- run_round13
+## mom24h(binance BTC 4h) @2025-01-01
+- IS-selected: mode=cont horizon=8 IS n=1455 net=+7905bp
+- OOS: n=473 hit=0.463 net=-4016bp
+
+--- run_forward_eval
+- funding_carry_24h: n=3 hit=0.333 net=-1095bp
+- us_session_drift: n=7 hit=1.000 net=+2224bp
+(tracking 76 streams; 24 with post-boundary events)
+
+=== DONE 2026-09-25T14:25:35Z ===

@@ -1,0 +1,57 @@
+# Phase -1 Empirical Existence Test — report
+
+snapshot: `data_snapshot/` (50-file hash manifest); manifest: `manifest.yaml` frozen 2026-09-23
+declared families for deflation: 9; costs: 5bp/side
+
+## Step 1 — Validator calibration (fixtures)
+
+| fixture | n | hit | wilson_lo | net_bp | sharpe | prefix_inv | implausible | expected | result |
+|---|---|---|---|---|---|---|---|---|---|
+| leak_tsmom | 99 | 0.495 | 0.397 | 2388 | 0.74 | FAIL | False | caught | ✓ |
+| null_random | 30 | 0.600 | 0.423 | -311 | -0.47 | n/a | False | dies | ✓ |
+| null_shifted | 46 | 0.522 | 0.381 | -2850 | -2.25 | n/a | False | dies | ✓ |
+| planted_weak_edge | 100 | 0.640 | 0.542 | 17063 | 5.02 | n/a | True | survives | ✓ |
+
+**Calibration: PASS**
+
+## Step 2 — Real candidates
+
+| candidate | n | hit | wilson_lo | n_ep | ep_hit | ep_wlo | ep_gate | net_bp | Sharpe | PSR | DSR | placebo_p | splits | prefix | PBO | **verdict** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| tsmom_daily_14d | 97 | 0.526 | 0.427 | 14 | 0.500 | 0.268 | UNDERPOWERED | -4194 | -1.21 | 0.119 | 0.002 | 0.645 | mixed | pass | 0.77 | **UNDERPOWERED** |
+| fra_momentum_p90_long | 3 | 0.667 | 0.208 | 3 | 0.667 | 0.208 | UNDERPOWERED | -123 | 0.00 | nan | nan | n/a | mixed | FAIL | n/a | **BLOCKED** |
+| fra_fade_p90_short | 9 | 0.333 | 0.121 | 4 | 0.250 | 0.046 | UNDERPOWERED | -997 | 0.00 | nan | nan | 0.815 | mixed | FAIL | n/a | **BLOCKED** |
+| trend1_donchian_4h | 136 | 0.331 | 0.257 | 104 | 0.308 | 0.227 | FAIL | -4531 | -3.67 | 0.012 | 0.000 | 0.015 | consistent | pass | n/a | **KILL** |
+| flush1_reversal_15m | 572 | 0.503 | 0.463 | 272 | 0.408 | 0.351 | FAIL | -4681 | -2.60 | 0.026 | 0.001 | 0.663 | consistent | pass | n/a | **KILL** |
+| basis1_premium_p10 | 43 | 0.465 | 0.325 | 21 | 0.381 | 0.208 | UNDERPOWERED | -1105 | -4.16 | 0.019 | 0.002 | 0.566 | mixed | FAIL | n/a | **BLOCKED** |
+| mrv_rsi_reversion_1h | 997 | 0.554 | 0.523 | 146 | 0.630 | 0.549 | PASS | -6125 | -0.94 | 0.207 | 0.009 | 0.336 | mixed | pass | n/a | **KILL** |
+| ofi_imbalance_l2 | 94 | 0.521 | 0.421 | 28 | 0.571 | 0.391 | UNDERPOWERED | 594 | 1.97 | 0.680 | 0.522 | n/a | mixed | pass | n/a | **UNDERPOWERED** |
+
+## Audit notes (reproducibility caveats)
+
+- Data eras are disjoint: 1d/1h/4h caches end ~2026-05-21 while 15m/funding/L2
+  cover Mar-Sep 2026. Powered KILL verdicts bound the OLD regime set, not the
+  recent Aug-Sep rally (manifest errata E3).
+- fra_* evaluated on 15m bars, not the 1h named in the spec text — the 1h cache
+  has zero overlap with the funding window (errata E1).
+- Power gate enforces n>=30 AND event span>=30d; clustered events are not
+  independent observations (errata E2).
+- Event CSVs include unevaluable tail events (NaN ret_bp) — signal identity is
+  preserved for leak checks; metrics drop them.
+- planted_weak_edge trips the implausibility flag (Sharpe ~5) by construction;
+  it still passes survival criteria — the flag working is itself evidence.
+
+## Verdicts
+
+- `tsmom_daily_14d`: **UNDERPOWERED** (n=97, net=-4194bp) — n_eff=14 < 30 (span 351d / median horizon 7d) — overlapping windows are not independent
+- `fra_momentum_p90_long`: **BLOCKED** (n=3, net=-123bp) — n=3 < 30 minimum for directional resolution
+- `fra_fade_p90_short`: **BLOCKED** (n=9, net=-997bp) — n=9 < 30 minimum for directional resolution
+- `trend1_donchian_4h`: **KILL** (n=136, net=-4531bp) — n=136 (n_eff=104), Sharpe=-3.67, MinTRL=infd, MinBTL=20.7y@SR0.5
+- `flush1_reversal_15m`: **KILL** (n=572, net=-4681bp) — n=572 (n_eff=272), Sharpe=-2.60, MinTRL=infd, MinBTL=20.7y@SR0.5
+- `basis1_premium_p10`: **BLOCKED** (n=43, net=-1105bp) — n_eff=21 < 30 (span 51d / median horizon 0d) — overlapping windows are not independent
+- `mrv_rsi_reversion_1h`: **KILL** (n=997, net=-6125bp) — n=997 (n_eff=146), Sharpe=-0.94, MinTRL=infd, MinBTL=20.7y@SR0.5
+- `ofi_imbalance_l2`: **UNDERPOWERED** (n=94, net=594bp) — span=19d < 30d minimum — clustered events are not independent observations
+
+## Branch decision
+
+**Zero survivors on powered data** → next investment is better hypotheses / different information sources, not architecture. This bounds the tested hypothesis space only — it does not prove the venue has no alpha.

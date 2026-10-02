@@ -1,0 +1,31 @@
+# Phase -1 Round 4 — daily macro/on-chain families (Harmony export)
+
+Data: `data_extended/harmony/macro_daily.parquet` — blockchain_api BTC
+price (2010-2026), coinmetrics MVRV, alternative.me fng, Farside ETF
+flows (2024+), Binance daily OI, coc funding, FRED. Verified: price
+sanity at known dates, ETF pre-launch clean (NaN not 0), monotonic.
+n_trials=17. Daily data => fewer independent events by construction.
+
+| candidate | n | n_uncov | hit | wilson_lo | gate | net_bp | Sharpe | PSR | DSR | placebo_p | splits | leak | **verdict** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| onchain_mvrv_regime | 91 | 0 | 0.407 | 0.311 | FAIL | -110698 | -4.02 | 0.000 | 0.000 | 0.001 | consistent | pass | **KILL** |
+  (power: n=91 (n_eff=91), Sharpe=-4.02, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.000 (block=5)
+  eras: 2011 n=5 net=-6354 | 2013 n=4 net=-40576 | 2014 n=7 net=-130 | 2015 n=7 net=-1181 | 2016 n=7 net=-5886 | 2017 n=11 net=-27179 | 2018 n=10 net=-1326 | 2019 n=2 net=+1052 | 2020 n=5 net=-11150 | 2021 n=3 net=-6320 | 2022 n=10 net=-2542 | 2023 n=3 net=+349 | 2024 n=7 net=-8055 | 2025 n=3 net=-81 | 2026 n=7 net=-1320
+| fng_extreme_sentiment | 40 | 0 | 0.450 | 0.307 | FAIL | -2741 | -0.39 | 0.126 | 0.000 | 0.666 | mixed | pass | **KILL** |
+  (power: n=40 (n_eff=40), Sharpe=-0.39, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.277 (block=5)
+  eras: 2018 n=3 net=+3379 | 2019 n=2 net=+92 | 2020 n=11 net=-4203 | 2021 n=7 net=+908 | 2022 n=6 net=+89 | 2024 n=2 net=-2140 | 2025 n=2 net=-533 | 2026 n=7 net=-332
+| etf_flow_5d | 56 | 1 | 0.536 | 0.407 | FAIL | -759 | -0.28 | 0.335 | 0.000 | 0.960 | mixed | pass | **KILL** |
+  (power: n=56 (n_eff=56), Sharpe=-0.28, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.449 (block=5)
+  eras: 2024 n=15 net=-3052 | 2025 n=27 net=-257 | 2026 n=14 net=+2550
+| cal_weekend_drift | 840 | 0 | 0.537 | 0.503 | PASS | 73900 | 1.34 | 1.000 | 0.000 | 0.615 | consistent | pass | **MODEL_RISK** |
+  (power: n=840 (n_eff=840), Sharpe=1.34, MinTRL=883d, MinBTL=20.7y@SR0.5)
+  bb_p=0.001 (block=5)
+  eras: 2010 n=20 net=+25407 | 2011 n=52 net=+23179 | 2012 n=52 net=-3323 | 2013 n=52 net=+6596 | 2014 n=52 net=-675 | 2015 n=52 net=+675 | 2016 n=53 net=+4430 | 2017 n=52 net=+3503 | 2018 n=52 net=+308 | 2019 n=52 net=+7997 | 2020 n=52 net=+753 | 2021 n=53 net=+4349 | 2022 n=52 net=-6350 | 2023 n=52 net=+5035 | 2024 n=52 net=+2814 | 2025 n=52 net=-1277 | 2026 n=38 net=+477
+| oi_price_divergence | 52 | 0 | 0.577 | 0.442 | FAIL | 4216 | 0.92 | 0.987 | 0.002 | 0.325 | mixed | pass | **WATCH** |
+  (power: n=52 (n_eff=52), Sharpe=0.92, MinTRL=5508d, MinBTL=20.7y@SR0.5)
+  bb_p=0.077 (block=5)
+  eras: 2020 n=2 net=-2180 | 2021 n=7 net=+852 | 2022 n=12 net=+1768 | 2023 n=5 net=-505 | 2024 n=14 net=+1514 | 2025 n=4 net=-182 | 2026 n=8 net=+2949
+

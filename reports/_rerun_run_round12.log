@@ -1,0 +1,69 @@
+# Phase -1 Round 12 — REMAINING-COLUMNS BATCH
+
+Last untested harmony_extended columns: CME OI, venue premia,
+dormancy, miner economics, cycle valuation, STH capitulation,
+nrpl loss side, cross-venue funding spread. Daily clock,
+c=px_bitstamp; trailing-prior-day percentiles; drift-audit and
+n_eff gates live; funding carry reported as diagnostic.
+Universe: BTC harmony clock. n_trials=50.
+
+| candidate | n | hit | wilson_lo | gate | net_bp | Sharpe | PSR | DSR | placebo_p | splits | leak | **verdict** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| cme_oi_confirm_3d | 49 | 0.449 | 0.319 | FAIL | 3038 | 0.73 | 0.956 | 0.000 | 0.318 | mixed | pass | **WATCH** |
+  (power: n=49 (n_eff=49), Sharpe=0.73, MinTRL=16394d, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=+52.9bp/ev t=0.79 long%=96% L=+56.8 S=-38.4
+  bb_p=0.151 (block=5)
+  eras: 2021 n=5 net=+1367 | 2022 n=9 net=-699 | 2023 n=18 net=+2687 | 2024 n=13 net=+607 | 2025 n=2 net=-577 | 2026 n=2 net=-347
+  funding-carry adj: net=+2542bp (paid +496bp; 100% covered)
+| coinbase_premium_drift_1d | 0 | nan | nan | UNDERPOWERED | 0 | 0.00 | nan | nan | nan | mixed | pass | **UNDERPOWERED** |
+  (power: n=0 < 30 minimum for directional resolution)
+  bb_p=nan (block=0)
+| bybit_premium_drift_1d | 291 | 0.505 | 0.448 | FAIL | -3731 | -0.28 | 0.250 | 0.000 | 0.890 | mixed | pass | **KILL** |
+  (power: n=291 (n_eff=291), Sharpe=-0.28, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=-0.6bp/ev t=-0.03 long%=41% L=-15.7 S=+9.7
+  bb_p=0.243 (block=5)
+  eras: 2020 n=5 net=+354 | 2021 n=51 net=-2755 | 2022 n=47 net=+1080 | 2023 n=57 net=-1164 | 2024 n=60 net=-467 | 2025 n=33 net=+105 | 2026 n=38 net=-885
+  funding-carry adj: net=-4693bp (paid +962bp; 100% covered)
+| dormancy_spike_fade_7d | 22 | 0.318 | 0.164 | UNDERPOWERED | -3377 | -2.48 | 0.000 | 0.000 | 0.410 | mixed | pass | **UNDERPOWERED** |
+  (power: n=22 < 30 minimum for directional resolution)
+  drift-audit: skill=-29.8bp/ev t=-0.28 long%=0% L=+nan S=-29.8
+  bb_p=nan (block=0)
+  eras: 2023 n=4 net=+151 | 2024 n=15 net=-2893 | 2025 n=3 net=-635
+  funding-carry adj: net=-2635bp (paid -742bp; 100% covered)
+| puell_extreme_7d | 334 | 0.434 | 0.382 | FAIL | -79637 | -2.15 | 0.000 | 0.000 | 0.001 | consistent | pass | **KILL** |
+  (power: n=334 (n_eff=334), Sharpe=-2.15, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=-240.0bp/ev t=-3.22 long%=53% L=-232.1 S=-249.0
+  bb_p=0.001 (block=5)
+  eras: 2011 n=15 net=-3569 | 2012 n=9 net=-7077 | 2013 n=13 net=-22511 | 2014 n=33 net=-5575 | 2015 n=23 net=-5363 | 2016 n=15 net=+44 | 2017 n=27 net=-14189 | 2018 n=35 net=-3675 | 2019 n=16 net=-2670 | 2020 n=20 net=-4564 | 2021 n=16 net=-6101 | 2022 n=21 net=+803 | 2023 n=29 net=-954 | 2024 n=28 net=-2342 | 2025 n=19 net=-1960 | 2026 n=15 net=+65
+  funding-carry adj: net=-77119bp (paid -2518bp; 45% covered)
+| reserve_risk_regime_7d | 299 | 0.428 | 0.373 | FAIL | -81848 | -2.62 | 0.000 | 0.000 | 0.000 | consistent | pass | **KILL** |
+  (power: n=299 (n_eff=299), Sharpe=-2.62, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=-266.9bp/ev t=-3.61 long%=51% L=-238.5 S=-296.3
+  bb_p=0.000 (block=5)
+  eras: 2012 n=2 net=+459 | 2013 n=20 net=-31762 | 2014 n=34 net=-1424 | 2015 n=30 net=-1297 | 2016 n=11 net=-981 | 2017 n=43 net=-27953 | 2018 n=28 net=-1207 | 2019 n=10 net=+2071 | 2020 n=15 net=-10450 | 2021 n=17 net=-4121 | 2022 n=42 net=-3026 | 2023 n=13 net=-324 | 2024 n=21 net=-2831 | 2025 n=13 net=+998
+  funding-carry adj: net=-78902bp (paid -2945bp; 40% covered)
+| lth_mvrv_extreme_7d | 76 | 0.382 | 0.281 | FAIL | -12463 | -3.16 | 0.000 | 0.000 | 0.027 | consistent | pass | **KILL** |
+  (power: n=76 (n_eff=76), Sharpe=-3.16, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=-150.5bp/ev t=-1.98 long%=47% L=-163.5 S=-138.9
+  bb_p=0.006 (block=5)
+  eras: 2023 n=15 net=-2475 | 2024 n=21 net=-6191 | 2025 n=14 net=-1681 | 2026 n=26 net=-2116
+  funding-carry adj: net=-11532bp (paid -932bp; 100% covered)
+| sth_sopr_loss_bounce_3d | 235 | 0.574 | 0.511 | PASS | 16329 | 0.64 | 0.989 | 0.000 | 0.423 | consistent | pass | **WATCH** |
+  (power: n=235 (n_eff=235), Sharpe=0.64, MinTRL=52618d, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=+10.9bp/ev t=0.21 long%=100% L=+10.9 S=+nan
+  bb_p=0.065 (block=5)
+  eras: 2013 n=30 net=-3903 | 2014 n=25 net=+4775 | 2015 n=6 net=+2030 | 2016 n=9 net=+516 | 2017 n=14 net=+6327 | 2018 n=30 net=+2019 | 2019 n=12 net=+290 | 2020 n=7 net=-2537 | 2021 n=20 net=+3641 | 2022 n=23 net=+1627 | 2023 n=6 net=+1504 | 2024 n=15 net=+1241 | 2025 n=24 net=+1447 | 2026 n=14 net=-2647
+  funding-carry adj: net=+16014bp (paid +315bp; 51% covered)
+| nrpl_capitulation_3d | 199 | 0.472 | 0.404 | FAIL | -7557 | -0.35 | 0.102 | 0.000 | 0.796 | consistent | pass | **KILL** |
+  (power: n=199 (n_eff=199), Sharpe=-0.35, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=-88.8bp/ev t=-1.73 long%=100% L=-88.8 S=+nan
+  bb_p=0.226 (block=5)
+  eras: 2013 n=9 net=+1264 | 2014 n=38 net=-1859 | 2015 n=8 net=-636 | 2018 n=32 net=-221 | 2019 n=1 net=-121 | 2020 n=8 net=+4593 | 2021 n=15 net=-1507 | 2022 n=29 net=-7684 | 2023 n=1 net=-242 | 2024 n=3 net=+2101 | 2025 n=32 net=-531 | 2026 n=23 net=-2714
+  funding-carry adj: net=-7726bp (paid +169bp; 56% covered)
+| xvenue_funding_spread_1d | 226 | 0.469 | 0.405 | FAIL | -5416 | -0.50 | 0.119 | 0.000 | 0.478 | mixed | pass | **KILL** |
+  (power: n=226 (n_eff=226), Sharpe=-0.50, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  drift-audit: skill=-12.7bp/ev t=-0.64 long%=44% L=-26.8 S=-1.5
+  bb_p=0.113 (block=5)
+  eras: 2020 n=3 net=+580 | 2021 n=41 net=-4768 | 2022 n=31 net=+917 | 2023 n=33 net=+2056 | 2024 n=63 net=-428 | 2025 n=25 net=-1916 | 2026 n=30 net=-1857
+  funding-carry adj: net=-5539bp (paid +123bp; 100% covered)
+

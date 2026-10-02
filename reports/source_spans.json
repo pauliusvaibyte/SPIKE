@@ -1,0 +1,470 @@
+{
+ "harmony_extended.px_bitstamp": {
+  "n": 5522,
+  "first": "2011-08-18",
+  "last": "2026-09-29",
+  "sig": "8f8e4c8988c175b1"
+ },
+ "harmony_extended.px_bitfinex": {
+  "n": 4924,
+  "first": "2013-03-31",
+  "last": "2026-09-29",
+  "sig": "b6ae3b2e19bedbc0"
+ },
+ "harmony_extended.px_coinbase": {
+  "n": 4090,
+  "first": "2015-07-20",
+  "last": "2026-09-29",
+  "sig": "19c4099e0594f0f9"
+ },
+ "harmony_extended.px_binance_spot": {
+  "n": 3302,
+  "first": "2017-08-17",
+  "last": "2026-08-31",
+  "sig": "079d2bfb3c99616e"
+ },
+ "harmony_extended.binance_spot_taker_buy": {
+  "n": 3302,
+  "first": "2017-08-17",
+  "last": "2026-08-31",
+  "sig": "07710807283f96d1"
+ },
+ "harmony_extended.px_bybit_perp": {
+  "n": 2380,
+  "first": "2020-03-25",
+  "last": "2026-09-29",
+  "sig": "0e791ca2df81b0df"
+ },
+ "harmony_extended.px_bybit_mark": {
+  "n": 2380,
+  "first": "2020-03-25",
+  "last": "2026-09-29",
+  "sig": "cb9db143456235b6"
+ },
+ "harmony_extended.px_bybit_index": {
+  "n": 2380,
+  "first": "2020-03-25",
+  "last": "2026-09-29",
+  "sig": "d469fe6708e3941c"
+ },
+ "harmony_extended.bybit_premium": {
+  "n": 2380,
+  "first": "2020-03-25",
+  "last": "2026-09-29",
+  "sig": "feae3a96a70d06b9"
+ },
+ "harmony_extended.funding_bybit": {
+  "n": 2380,
+  "first": "2020-03-25",
+  "last": "2026-09-29",
+  "sig": "98b13060464a817d"
+ },
+ "harmony_extended.funding_binance_um": {
+  "n": 2435,
+  "first": "2020-01-01",
+  "last": "2026-08-31",
+  "sig": "14eda91552387a02"
+ },
+ "harmony_extended.funding_deribit_8h": {
+  "n": 2710,
+  "first": "2019-04-30",
+  "last": "2026-09-29",
+  "sig": "13058a3052528ae2"
+ },
+ "harmony_extended.funding_agg_archive": {
+  "n": 1082,
+  "first": "2023-07-09",
+  "last": "2026-09-30",
+  "sig": "8d373cd0b30bd4b6"
+ },
+ "harmony_extended.oi_bybit": {
+  "n": 2220,
+  "first": "2020-08-01",
+  "last": "2026-09-29",
+  "sig": "c68f276e7c70cad7"
+ },
+ "harmony_extended.oi_futures_binance": {
+  "n": 2176,
+  "first": "2020-02-28",
+  "last": "2026-02-19",
+  "sig": "caeccddcfd298aad"
+ },
+ "harmony_extended.oi_futures_cme": {
+  "n": 2078,
+  "first": "2020-06-05",
+  "last": "2026-02-19",
+  "sig": "3eb7d755e60bed31"
+ },
+ "harmony_extended.oi_futures_hyperliquid": {
+  "n": 1145,
+  "first": "2023-01-01",
+  "last": "2026-02-19",
+  "sig": "89e7e61466a68e68"
+ },
+ "harmony_extended.oi_futures_deribit": {
+  "n": 2176,
+  "first": "2020-02-28",
+  "last": "2026-02-19",
+  "sig": "9ee0291c6abd9afd"
+ },
+ "harmony_extended.liq_long_usd": {
+  "n": 1399,
+  "first": "2022-12-03",
+  "last": "2026-10-01",
+  "sig": "d46c6927c0ea4c19"
+ },
+ "harmony_extended.liq_short_usd": {
+  "n": 1399,
+  "first": "2022-12-03",
+  "last": "2026-10-01",
+  "sig": "f305b4c492361033"
+ },
+ "harmony_extended.liq_total_archive": {
+  "n": 172,
+  "first": "2026-03-01",
+  "last": "2026-09-24",
+  "sig": "4cb6f90b42c0ff47"
+ },
+ "harmony_extended.dvol_close": {
+  "n": 2016,
+  "first": "2021-03-24",
+  "last": "2026-09-29",
+  "sig": "3bbde442e47cc497"
+ },
+ "harmony_extended.iv_atm_1w": {
+  "n": 1792,
+  "first": "2021-02-16",
+  "last": "2026-02-19",
+  "sig": "11553d3d46b68bac"
+ },
+ "harmony_extended.iv_atm_1m": {
+  "n": 1792,
+  "first": "2021-02-16",
+  "last": "2026-02-19",
+  "sig": "28c5703a3ee6615d"
+ },
+ "harmony_extended.iv_atm_3m": {
+  "n": 1792,
+  "first": "2021-02-16",
+  "last": "2026-02-19",
+  "sig": "de579b2c8bd29825"
+ },
+ "harmony_extended.iv_atm_6m": {
+  "n": 1792,
+  "first": "2021-02-16",
+  "last": "2026-02-19",
+  "sig": "3556f07af5d7f022"
+ },
+ "harmony_extended.skew25_1w": {
+  "n": 1761,
+  "first": "2021-02-16",
+  "last": "2026-02-19",
+  "sig": "b193249dbbd9685b"
+ },
+ "harmony_extended.skew25_1m": {
+  "n": 1761,
+  "first": "2021-02-16",
+  "last": "2026-02-19",
+  "sig": "6f0dde92895b76d4"
+ },
+ "harmony_extended.skew25_3m": {
+  "n": 1761,
+  "first": "2021-02-16",
+  "last": "2026-02-19",
+  "sig": "d196f3bea6e21769"
+ },
+ "harmony_extended.rv_1w": {
+  "n": 5695,
+  "first": "2010-07-19",
+  "last": "2026-02-19",
+  "sig": "371d8020726c9288"
+ },
+ "harmony_extended.rv_1m": {
+  "n": 5672,
+  "first": "2010-08-11",
+  "last": "2026-02-19",
+  "sig": "93d8641444bbaac3"
+ },
+ "harmony_extended.rv_3m": {
+  "n": 5612,
+  "first": "2010-10-10",
+  "last": "2026-02-19",
+  "sig": "e8c41aedf8afd019"
+ },
+ "harmony_extended.mvrv_raw": {
+  "n": 5917,
+  "first": "2010-07-18",
+  "last": "2026-09-28",
+  "sig": "1e9f79209e7a0804"
+ },
+ "harmony_extended.mvrv_z": {
+  "n": 5834,
+  "first": "2010-10-01",
+  "last": "2026-09-30",
+  "sig": "d0e4063fdf173985"
+ },
+ "harmony_extended.lth_mvrv": {
+  "n": 1445,
+  "first": "2022-10-01",
+  "last": "2026-09-24",
+  "sig": "3d0568896e403ea0"
+ },
+ "harmony_extended.sth_mvrv": {
+  "n": 1445,
+  "first": "2022-10-01",
+  "last": "2026-09-24",
+  "sig": "b44b89379e498ed0"
+ },
+ "harmony_extended.lth_sopr": {
+  "n": 2094,
+  "first": "2021-01-01",
+  "last": "2026-09-30",
+  "sig": "d4bd19df04c7e369"
+ },
+ "harmony_extended.sth_sopr": {
+  "n": 5358,
+  "first": "2012-01-01",
+  "last": "2026-09-30",
+  "sig": "7a0b25852dba73b3"
+ },
+ "harmony_extended.sopr_7sma": {
+  "n": 5364,
+  "first": "2012-01-07",
+  "last": "2026-09-30",
+  "sig": "8a342e7b39f822a0"
+ },
+ "harmony_extended.asopr": {
+  "n": 982,
+  "first": "2021-01-01",
+  "last": "2023-10-11",
+  "sig": "92fc9b98230a89ca"
+ },
+ "harmony_extended.nupl": {
+  "n": 5010,
+  "first": "2013-01-01",
+  "last": "2026-09-30",
+  "sig": "765aeacfbac5def3"
+ },
+ "harmony_extended.nrpl_usd": {
+  "n": 5373,
+  "first": "2012-01-01",
+  "last": "2026-09-30",
+  "sig": "423745bcde23e259"
+ },
+ "harmony_extended.realized_price": {
+  "n": 0
+ },
+ "harmony_extended.realized_pl_ratio": {
+  "n": 5374,
+  "first": "2012-01-01",
+  "last": "2026-09-30",
+  "sig": "160e9c0ff5508268"
+ },
+ "harmony_extended.realized_profit": {
+  "n": 5306,
+  "first": "2012-01-01",
+  "last": "2026-07-22",
+  "sig": "dcd515cc891781db"
+ },
+ "harmony_extended.realized_loss": {
+  "n": 5306,
+  "first": "2012-01-01",
+  "last": "2026-07-22",
+  "sig": "e0daf2529cf76b11"
+ },
+ "harmony_extended.lth_supply": {
+  "n": 4970,
+  "first": "2012-01-01",
+  "last": "2025-08-19",
+  "sig": "f8b0755fa186eda8"
+ },
+ "harmony_extended.sth_supply": {
+  "n": 4542,
+  "first": "2012-01-01",
+  "last": "2024-09-12",
+  "sig": "c77be2771f070a6e"
+ },
+ "harmony_extended.exchange_balance_total": {
+  "n": 5160,
+  "first": "2011-01-31",
+  "last": "2025-11-09",
+  "sig": "4a4888e78d59945b"
+ },
+ "harmony_extended.hashrate": {
+  "n": 5377,
+  "first": "2012-01-01",
+  "last": "2026-09-30",
+  "sig": "8686d0fddabba9f9"
+ },
+ "harmony_extended.coinbase_premium": {
+  "n": 0
+ },
+ "harmony_extended.puell": {
+  "n": 6107,
+  "first": "2010-01-08",
+  "last": "2026-09-27",
+  "sig": "9b8f5163a94d5429"
+ },
+ "harmony_extended.reserve_risk": {
+  "n": 5101,
+  "first": "2012-01-01",
+  "last": "2025-12-28",
+  "sig": "c7f3eb6a0bfc1d96"
+ },
+ "harmony_extended.dormancy": {
+  "n": 6101,
+  "first": "2010-01-01",
+  "last": "2026-09-26",
+  "sig": "5d0673190a8b9572"
+ },
+ "harmony_extended.liveliness": {
+  "n": 5894,
+  "first": "2010-01-01",
+  "last": "2026-02-19",
+  "sig": "ccab01bb7f42d640"
+ },
+ "harmony_extended.nvt_adj90": {
+  "n": 4556,
+  "first": "2012-01-01",
+  "last": "2024-07-01",
+  "sig": "d9d546263f1cd130"
+ },
+ "harmony_extended.cdd": {
+  "n": 1292,
+  "first": "2022-10-01",
+  "last": "2026-04-26",
+  "sig": "0ea9739a4fae7445"
+ },
+ "harmony_extended.fng": {
+  "n": 3126,
+  "first": "2018-02-01",
+  "last": "2026-10-01",
+  "sig": "c03518e00b05bd52"
+ },
+ "harmony_daily.btc_price": {
+  "n": 5919,
+  "first": "2010-07-18",
+  "last": "2026-09-30",
+  "sig": "2b0eed72cea9c60d"
+ },
+ "harmony_daily.mvrv": {
+  "n": 5919,
+  "first": "2010-07-18",
+  "last": "2026-09-30",
+  "sig": "49788332bc6ea399"
+ },
+ "harmony_daily.fng": {
+  "n": 3159,
+  "first": "2018-02-01",
+  "last": "2026-09-29",
+  "sig": "33383701e9e00820"
+ },
+ "harmony_daily.etf_flow_usd_m": {
+  "n": 696,
+  "first": "2024-01-11",
+  "last": "2026-09-28",
+  "sig": "eab32d5e143f833b"
+ },
+ "harmony_daily.oi_binance": {
+  "n": 2223,
+  "first": "2020-08-01",
+  "last": "2026-09-29",
+  "sig": "543a956fb6b934ad"
+ },
+ "harmony_daily.funding_confluence_flag": {
+  "n": 5163,
+  "first": "2012-01-02",
+  "last": "2026-02-19",
+  "sig": "ebcc03c8775b92a7"
+ },
+ "harmony_daily.sopr_minus1": {
+  "n": 5667,
+  "first": "2010-08-16",
+  "last": "2026-02-19",
+  "sig": "00654145742b5006"
+ },
+ "harmony_daily.fred_us10y": {
+  "n": 4186,
+  "first": "2010-01-04",
+  "last": "2026-09-25",
+  "sig": "4862b6b47c63a2c8"
+ },
+ "harmony_daily.fred_vix": {
+  "n": 4238,
+  "first": "2010-01-04",
+  "last": "2026-09-22",
+  "sig": "3443613690fc8480"
+ },
+ "harmony_daily.fred_nasdaq": {
+  "n": 4210,
+  "first": "2010-01-04",
+  "last": "2026-09-28",
+  "sig": "05a4417b507a6325"
+ },
+ "harmony_daily.fred_fed_funds": {
+  "n": 6112,
+  "first": "2010-01-01",
+  "last": "2026-09-25",
+  "sig": "e97220071888ad35"
+ },
+ "harmony_daily.c": {
+  "n": 5919,
+  "first": "2010-07-18",
+  "last": "2026-09-30",
+  "sig": "2b0eed72cea9c60d"
+ },
+ "coinmetrics.adractcnt": {
+  "n": 6480,
+  "first": "2009-01-03",
+  "last": "2026-09-30",
+  "sig": "c676d0bd77fc6620"
+ },
+ "coinmetrics.txcnt": {
+  "n": 6480,
+  "first": "2009-01-03",
+  "last": "2026-09-30",
+  "sig": "b08a4d62bbac262b"
+ },
+ "coinmetrics.splycur": {
+  "n": 6480,
+  "first": "2009-01-03",
+  "last": "2026-09-30",
+  "sig": "e57be505f78824ee"
+ },
+ "coinmetrics.hashrate": {
+  "n": 6474,
+  "first": "2009-01-09",
+  "last": "2026-09-30",
+  "sig": "fc3067dd9d8dc9de"
+ },
+ "coinmetrics.priceusd": {
+  "n": 5919,
+  "first": "2010-07-18",
+  "last": "2026-09-30",
+  "sig": "3ba770b4256845f0"
+ },
+ "coinmetrics.capmvrvcur": {
+  "n": 5919,
+  "first": "2010-07-18",
+  "last": "2026-09-30",
+  "sig": "298d559bafc80925"
+ },
+ "coinmetrics.capmrktcurusd": {
+  "n": 5919,
+  "first": "2010-07-18",
+  "last": "2026-09-30",
+  "sig": "e78b09a84def3876"
+ },
+ "coinmetrics.flowinexusd": {
+  "n": 5639,
+  "first": "2011-04-24",
+  "last": "2026-09-30",
+  "sig": "246dacec089d8524"
+ },
+ "coinmetrics.flowoutexusd": {
+  "n": 5639,
+  "first": "2011-04-24",
+  "last": "2026-09-30",
+  "sig": "d1476e5fbf578f1e"
+ }
+}

@@ -1,0 +1,50 @@
+assets with extended data: ['btc', 'sol', 'eth', 'xrp', 'doge', 'avax', 'link']
+# Phase -1 Round 6 — cross-sectional expansion + new-mechanism batch
+
+Declared pre-execution in manifest `round6_candidates`. Universe:
+BTC,SOL,ETH,XRP,DOGE,AVAX,LINK on data_extended/. Mechanisms:
+xasset lead/lag, funding RV vs basket, HL premium dislocation,
+funding duration, 15m bounce, equity beta, OI crowding, taker
+toxicity. n_trials=26.
+
+| candidate | n | n_uncov | hit | wilson_lo | gate | net_bp | Sharpe | PSR | DSR | placebo_p | splits | leak | **verdict** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| xasset_btc_leads_alts | 2136 | 6 | 0.448 | 0.427 | FAIL | -29093 | -4.45 | 0.001 | 0.000 | 0.009 | consistent | pass | **KILL** |
+  (power: n=2136 (n_eff=356), Sharpe=-4.45, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.001 (block=8)
+  eras: 2026 n=2136 net=-29093
+  per-asset net: AVAX -4492 | DOGE -5099 | ETH -4035 | LINK -5749 | SOL -5165 | XRP -4553
+| funding_xasset_rv | 4041 | 1527 | 0.499 | 0.483 | FAIL | -101521 | -2.00 | 0.001 | 0.000 | 0.016 | consistent | pass | **KILL** |
+  (power: n=4041 (n_eff=162), Sharpe=-2.00, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.001 (block=5)
+  eras: 2024 n=1174 net=-36787 | 2025 n=1530 net=-39953 | 2026 n=1337 net=-24782
+  per-asset net: AVAX +25147 | BTC +9976 | DOGE -60934 | ETH -13262 | LINK -20466 | SOL -10141 | XRP -31842
+| hl_premium_disloc | 6415 | 3102 | 0.495 | 0.483 | FAIL | -136369 | -1.65 | 0.003 | 0.000 | 0.000 | consistent | pass | **KILL** |
+  (power: n=6415 (n_eff=706), Sharpe=-1.65, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.001 (block=12)
+  eras: 2024 n=2116 net=-96575 | 2025 n=2135 net=-24695 | 2026 n=2164 net=-15099
+  per-asset net: AVAX +1895 | BTC -4558 | DOGE -38569 | ETH -19702 | LINK -20225 | SOL -4874 | XRP -50336
+| funding_run_persistence | 965 | 331 | 0.499 | 0.468 | FAIL | -14380 | -0.65 | 0.159 | 0.000 | 0.719 | mixed | pass | **KILL** |
+  (power: n=965 (n_eff=320), Sharpe=-0.65, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.173 (block=5)
+  eras: 2024 n=170 net=-3049 | 2025 n=417 net=-7048 | 2026 n=378 net=-4283
+  per-asset net: AVAX +634 | BTC +1383 | DOGE -9382 | ETH -6854 | LINK +1402 | SOL -394 | XRP -1168
+| serialcorr_15m_bounce | 4137 | 0 | 0.520 | 0.505 | PASS | -47917 | -14.52 | 0.000 | 0.000 | 0.010 | consistent | pass | **KILL** |
+  (power: n=4137 (n_eff=1537), Sharpe=-14.52, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.000 (block=6)
+  eras: 2026 n=4137 net=-47917
+  per-asset net: AVAX -5017 | BTC -5608 | DOGE -7837 | ETH -6090 | LINK -7897 | SOL -8335 | XRP -7134
+| equity_lead_btc_5d | 233 | 1 | 0.494 | 0.430 | FAIL | 5667 | 0.18 | 0.759 | 0.000 | 0.647 | mixed | pass | **WATCH** |
+  (power: n=233 (n_eff=233), Sharpe=0.18, MinTRL=infd, MinBTL=20.7y@SR0.5)
+  bb_p=0.373 (block=5)
+  eras: 2010 n=1 net=-10 | 2011 n=24 net=-4459 | 2012 n=7 net=+434 | 2013 n=11 net=-4315 | 2014 n=14 net=+458 | 2015 n=22 net=+1402 | 2016 n=12 net=+2532 | 2017 n=8 net=-398 | 2018 n=26 net=+3383 | 2019 n=5 net=-2678 | 2020 n=14 net=+2961 | 2021 n=17 net=-534 | 2022 n=26 net=+4533 | 2023 n=8 net=+147 | 2024 n=15 net=+1149 | 2025 n=10 net=+691 | 2026 n=13 net=+372
+| oi_crowding_fade | 1 | 0 | 0.000 | 0.000 | UNDERPOWERED | -64 | 0.00 | nan | nan | nan | mixed | pass | **UNDERPOWERED** |
+  (power: n=1 < 30 minimum for directional resolution)
+  bb_p=nan (block=0)
+  eras: 2026 n=1 net=-64
+| taker_toxicity_1h | 60 | 0 | 0.483 | 0.362 | FAIL | -770 | -9.78 | 0.055 | 0.025 | 0.641 | mixed | pass | **UNDERPOWERED** |
+  (power: span=12d < 30d minimum — clustered events are not independent observations)
+  bb_p=0.072 (block=5)
+  eras: 2026 n=60 net=-770
+  per-asset net: BTC -506 | SOL -264
+
